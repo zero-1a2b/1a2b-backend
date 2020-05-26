@@ -1,17 +1,459 @@
-import { GameServer } from "../../src/game/server";
+import { GameServer, GameState } from "../../src/game/server";
+import { EventType, NewServerGameEvent, TimeoutEvent, GuessEvent, GameEvent } from '../../src/game/logic/event';
 
+function newGameServer(): GameServer {
+    return GameServer.newGame(
+        ['a', 'b'],
+        {
+            answerLength: 4,
+            playerTimeoutMillis: 1000
+        },
+        {
+            answer: [1, 2, 3, 4],
+            players: ['a', 'b']
+        }
+    )
+}
 
 describe('GameServer.newGame works', () => {
-  
+
     it('works', () => {
-        GameServer.newGame(
-            ['a','b'],
+        const game = GameServer.newGame(
+            ['a', 'b'],
             {
                 answerLength: 4,
                 playerTimeoutMillis: 1000
             }
         )
-        expect(1).toEqual(1);
+        expect(game.state).toEqual(GameState.READY);
+        expect(game.game.players).toContainEqual('a');
+        expect(game.game.players).toContainEqual('b');
+        expect(game.game.answer).toHaveLength(4);
     });
 
-  });
+    it('works with given shuffled player', () => {
+        const game = GameServer.newGame(
+            ['a', 'b'],
+            {
+                answerLength: 4,
+                playerTimeoutMillis: 1000
+            },
+            {
+                players: ['a', 'b']
+            }
+        )
+        expect(game.state).toEqual(GameState.READY);
+        expect(game.game.players).toEqual(['a', 'b']);
+        expect(game.game.answer).toHaveLength(4);
+    });
+
+    it('works with given answer', () => {
+        const game = GameServer.newGame(
+            ['a', 'b'],
+            {
+                answerLength: 4,
+                playerTimeoutMillis: 1000
+            },
+            {
+                answer: [1, 2, 3, 4]
+            }
+        )
+        expect(game.state).toEqual(GameState.READY);
+        expect(game.game.players).toContainEqual('a');
+        expect(game.game.players).toContainEqual('b');
+        expect(game.game.answer).toEqual([1, 2, 3, 4]);
+    });
+
+    it('rejects given answer wrong length', () => {
+        expect(
+            () => {
+                GameServer.newGame(
+                    ['a', 'b'],
+                    {
+                        answerLength: 4,
+                        playerTimeoutMillis: 1000
+                    },
+                    {
+                        answer: [1, 2, 3]
+                    }
+                )
+            }
+        ).toThrow();
+    });
+
+    it('rejects invalid answerLength', () => {
+        expect(
+            () => {
+                GameServer.newGame(
+                    ['a', 'b'],
+                    {
+                        answerLength: 0,
+                        playerTimeoutMillis: 1000
+                    }
+                )
+            }
+        ).toThrow();
+
+        expect(
+            () => {
+                GameServer.newGame(
+                    ['a', 'b'],
+                    {
+                        answerLength: 10,
+                        playerTimeoutMillis: 1000
+                    }
+                )
+            }
+        ).toThrow();
+    });
+
+    it('rejects invalid playerTimeoutMillis', () => {
+        expect(
+            () => {
+                GameServer.newGame(
+                    ['a', 'b'],
+                    {
+                        answerLength: 4,
+                        playerTimeoutMillis: 0
+                    }
+                )
+            }
+        ).toThrow();
+    });
+
+    it('rejects empty players', () => {
+        expect(
+            () => {
+                GameServer.newGame(
+                    [],
+                    {
+                        answerLength: 4,
+                        playerTimeoutMillis: 1000
+                    }
+                )
+            }
+        ).toThrow();
+    });
+
+});
+
+describe('GameServer\'s constructor works', () => {
+
+    const newGame: NewServerGameEvent = {
+        type: EventType.NEW_GAME_SERVER,
+        players: ['a', 'b'],
+        answer: [1, 2, 3, 4],
+        config: {
+            answerLength: 4,
+            playerTimeoutMillis: 1000
+        }
+    }
+
+    const timeout: TimeoutEvent = {
+        type: EventType.TIMEOUT
+    }
+
+    it('works', () => {
+        const game = new GameServer([newGame, timeout])
+        expect(game.state).toEqual(GameState.READY);
+        expect(game.game.players).toEqual(['a', 'b']);
+        expect(game.game.answer).toEqual([1, 2, 3, 4]);
+        expect(game.game.guesser).toEqual(1);
+    });
+
+    it('enforce start with newGame', () => {
+        expect(() => new GameServer([timeout])).toThrow();
+    });
+
+    it('enforce no duplicate newGame', () => {
+        expect(() => new GameServer([newGame, newGame])).toThrow();
+    });
+
+});
+
+describe('GameServer\'s lifecycle functions works', () => {
+
+    it('works', () => {
+        const game = newGameServer();
+        expect(game.state).toBe(GameState.READY);
+        game.start();
+        expect(game.state).toBe(GameState.RUNNING);
+        game.stop();
+        expect(game.state).toBe(GameState.FINISHED);
+    });
+
+    it('accepts repeated start', () => {
+        const game = newGameServer();
+
+        game.start();
+        expect(() => game.start()).not.toThrow();
+
+        game.stop();
+    });
+
+    it('accepts repeated stop', () => {
+        const game = newGameServer();
+
+        game.start();
+
+        game.stop();
+        expect(() => game.stop()).not.toThrow();
+    });
+
+    it('rejects stop before start', () => {
+        const server = newGameServer();
+        expect(() => server.stop()).toThrow();
+    });
+
+    it('rejects start after stop', () => {
+        const server = newGameServer();
+        server.start();
+        server.stop();
+        expect(() => server.start()).toThrow();
+    });
+
+});
+
+describe('GameServer\'s command works', () => {
+
+    it('makeGuess works', () => {
+        const game = newGameServer();
+        game.start();
+
+        game.makeGuess({
+            player: 'a',
+            guess: [1,2,4,3]
+        })
+
+        expect(game.game.guesser).toBe(1);
+        const event: GuessEvent = game.history[1] as GuessEvent;
+        expect(event).toEqual({
+            type: EventType.GUESS,
+            player: 'a',
+            guess: [1,2,4,3],
+            a: 2,
+            b: 2
+        })
+
+        game.stop();
+    });
+
+    it('makeGuess wins correctly', () => {
+        const game = newGameServer();
+        game.start();
+
+        game.makeGuess({
+            player: 'a',
+            guess: [1, 2, 3, 4]
+        })
+
+        expect(game.game.winner).toBe('a');
+
+        game.stop();
+    });
+
+    it('winning stops the game', () => {
+        const game = newGameServer();
+        game.start();
+
+        game.makeGuess({
+            player: 'a',
+            guess: [1,2,3,4]
+        })
+
+        expect(game.state).toBe(GameState.FINISHED);
+
+        game.stop();
+    });
+
+    it('timeout works', () => {
+        jest.useFakeTimers();
+
+        const game = newGameServer();
+        game.start();
+
+        jest.runOnlyPendingTimers();
+
+        expect(game.game.guesser).toBe(1);
+
+        game.stop();
+    });
+
+});
+
+describe('GameServer\'s eventing works', () => {
+
+    it('eventing works', () => {
+        let called: GuessEvent;
+
+        const game = newGameServer();
+        game.events.subscribe(v=>called=v as GuessEvent);
+        game.start();
+
+        game.makeGuess({
+            player: 'a',
+            guess: [1,2,4,3]
+        });
+
+        expect(called.type).toEqual(EventType.GUESS);
+
+        game.stop();
+    });
+
+});
+
+describe('GameServer simulated playtesting', () => {
+
+    it('works', () => {
+
+        jest.useFakeTimers();
+
+        const game = GameServer.newGame(
+            ['a', 'b'],
+            {
+                answerLength: 4,
+                playerTimeoutMillis: 1000
+            },
+            {
+                answer: [1, 2, 3, 4],
+                players: ['a', 'b']
+            }
+        );
+
+        let lastEvent: GameEvent;
+        game.events.subscribe(v=>lastEvent=v);
+
+        game.start();
+
+
+        game.makeGuess(
+            {
+                player: 'a',
+                guess: [1, 2, 3, 5]
+            }
+        );
+        expect(lastEvent).toEqual(
+            {
+                type: EventType.GUESS,
+                player: 'a',
+                guess: [1,2,3,5],
+                a: 3,
+                b: 0
+            }
+        );
+
+        jest.advanceTimersByTime(1000);
+        expect(lastEvent).toEqual(
+            {
+                type: EventType.TIMEOUT
+            }
+        );
+
+        game.makeGuess(
+            {
+                player: 'a',
+                guess: [1, 4, 3, 6]
+            }
+        );
+        expect(lastEvent).toEqual(
+            {
+                type: EventType.GUESS,
+                player: 'a',
+                guess: [1, 4, 3, 6],
+                a: 2,
+                b: 1
+            }
+        );
+
+        game.makeGuess(
+            {
+                player: 'b',
+                guess: [1, 2, 7, 4]
+            }
+        );
+        expect(lastEvent).toEqual(
+            {
+                type: EventType.GUESS,
+                player: 'b',
+                guess: [1,2,7,4],
+                a: 3,
+                b: 0
+            }
+        );
+
+        game.makeGuess(
+            {
+                player: 'a',
+                guess: [1, 2, 3, 4]
+            }
+        );
+        expect(lastEvent).toEqual(
+            {
+                type: EventType.GUESS,
+                player: 'a',
+                guess: [1,2,3,4],
+                a: 4,
+                b: 0
+            }
+        );
+
+        expect(game.game.winner).toEqual('a');
+
+        game.stop();
+    });
+
+    it('simple-scenario', () => {
+
+        jest.useFakeTimers();
+
+        const game = GameServer.newGame(
+            ['a', 'b'],
+            {
+                answerLength: 4,
+                playerTimeoutMillis: 1000
+            },
+            {
+                answer: [1, 2, 3, 4],
+                players: ['a', 'b']
+            }
+        );
+
+        let lastEvent: GameEvent;
+        game.events.subscribe(v=>lastEvent=v);
+
+        game.start();
+
+
+        game.makeGuess({ player: 'a', guess: [1, 2, 3, 5]});
+        expect(lastEvent).toEqual(
+            {
+                type: EventType.GUESS,
+                player: 'a',
+                guess: [1,2,3,5],
+                a: 3, b: 0
+            }
+        );
+
+        jest.advanceTimersByTime(1000);
+        expect(lastEvent).toEqual(
+            {
+                type: EventType.TIMEOUT
+            }
+        );
+
+        game.makeGuess({player: 'a', guess: [1, 2, 3, 4]});
+        expect(lastEvent).toEqual(
+            {
+                type: EventType.GUESS,
+                player: 'a',
+                guess: [1,2,3,4],
+                a: 4, b: 0
+            }
+        );
+
+        expect(game.game.winner).toEqual('a');
+
+        game.stop();
+    });
+    
+});
