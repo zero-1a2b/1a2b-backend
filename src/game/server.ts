@@ -1,7 +1,7 @@
 import { ServerGame, GuessRequest } from "./logic/game";
-import { GameEvent, EventType, NewServerGameEvent, isNormalEvent, NormalEvent, GameConfig } from './logic/event';
+import { GameEvent, EventType, NewServerGameEvent, NormalEvent, GameConfig } from './logic/event';
 import { Player } from './logic/player';
-import { shuffle, take, drop } from 'lodash';
+import { shuffle, take } from 'lodash';
 import { EventEmitter } from '../util/EventEmitter';
 
 
@@ -55,15 +55,12 @@ export class GameServer {
             config: config
         }
 
-        return new GameServer([event]);
+        return new GameServer(event);
     }
 
 
     public get state(): GameState { return this._state; }
     private _state: GameState;
-
-    public get history(): GameEvent[] { return this._history; }
-    private _history: GameEvent[];
 
     public readonly events: EventEmitter<GameEvent>;
 
@@ -74,31 +71,22 @@ export class GameServer {
     private _timeout: any | undefined;
 
 
-    constructor(
-        history: GameEvent[]
-    ){
+    constructor(start: NewServerGameEvent){
         this._state = GameState.READY;
 
-        if(history[0].type !== EventType.NEW_GAME_SERVER) {
-            throw Error("history events must begin with newServerGameEvent!");
-        }
-        this._history = [];
         this.events = new EventEmitter();
-        this._game = ServerGame.fromNewGameEvent(history[0] as NewServerGameEvent);
-        this._history.push(history[0]);
+        this._game = ServerGame.fromNewGameEvent(start);
 
-        drop(history, 1).forEach(v=>{
-            if(isNormalEvent(v)) {
-                this.addEvent(v);
-            } else {
-                throw Error("cannot accept more than one NewGameEvent!");
-            }
-        });
+        this._timeout = undefined;
     }
 
-    private addEvent(e: NormalEvent): void {
+
+    acceptEvent(e: NormalEvent): void {
         this._game = this._game.handleEvent(e);
-        this._history.push(e);
+    }
+
+    private emitEvent(e: NormalEvent): void {
+        this.acceptEvent(e);
         this.events.emit(e);
     }
 
@@ -144,14 +132,14 @@ export class GameServer {
             throw ret;
         }
 
-        this.addEvent(ret);
+        this.emitEvent(ret);
         this.resetTimeoutTimer();
 
         this.stopIfGameFinished();
     }
 
     private timeoutPlayer(): void {
-        this.addEvent({
+        this.emitEvent({
             type: EventType.TIMEOUT
         });
 

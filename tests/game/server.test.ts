@@ -1,5 +1,5 @@
 import { GameServer, GameState } from "../../src/game/server";
-import { EventType, NewServerGameEvent, TimeoutEvent, GuessEvent, GameEvent } from '../../src/game/logic/event';
+import { EventType, NewServerGameEvent, GuessEvent, GameEvent, NormalEvent } from '../../src/game/logic/event';
 
 function newGameServer(): GameServer {
     return GameServer.newGame(
@@ -149,24 +149,12 @@ describe('GameServer\'s constructor works', () => {
         }
     }
 
-    const timeout: TimeoutEvent = {
-        type: EventType.TIMEOUT
-    }
-
     it('works', () => {
-        const game = new GameServer([newGame, timeout])
+        const game = new GameServer(newGame)
         expect(game.state).toEqual(GameState.READY);
         expect(game.game.players).toEqual(['a', 'b']);
         expect(game.game.answer).toEqual([1, 2, 3, 4]);
-        expect(game.game.guesser).toEqual(1);
-    });
-
-    it('enforce start with newGame', () => {
-        expect(() => new GameServer([timeout])).toThrow();
-    });
-
-    it('enforce no duplicate newGame', () => {
-        expect(() => new GameServer([newGame, newGame])).toThrow();
+        expect(game.game.guesser).toEqual(0);
     });
 
 });
@@ -218,6 +206,9 @@ describe('GameServer\'s command works', () => {
 
     it('makeGuess works', () => {
         const game = newGameServer();
+        let lastEvent: NormalEvent;
+        game.events.subscribe(v=>lastEvent=v);
+
         game.start();
 
         game.makeGuess({
@@ -226,7 +217,7 @@ describe('GameServer\'s command works', () => {
         })
 
         expect(game.game.guesser).toBe(1);
-        const event: GuessEvent = game.history[1] as GuessEvent;
+        const event: GuessEvent = lastEvent as GuessEvent;
         expect(event).toEqual({
             type: EventType.GUESS,
             player: 'a',
@@ -455,5 +446,5 @@ describe('GameServer simulated playtesting', () => {
 
         game.stop();
     });
-    
+
 });
