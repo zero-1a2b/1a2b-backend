@@ -108,6 +108,7 @@ export class ServerGame {
 
     get config(): GameConfig { return this.game.config; }
 
+    isFinished(): boolean { return this.game.isFinished(); }
 
     timeout(): TimeoutEvent {
         return { type: EventType.TIMEOUT }
