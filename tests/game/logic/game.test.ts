@@ -10,13 +10,14 @@ describe('Game.fromNewGameEvent works', () => {
       answer: [1,2,3,4],
       players: ['a','b','c'],
       config: {
+        answerLength: 4,
         playerTimeoutMillis: 1000
       }
     };
 
     const game = Game.fromNewGameEvent(event);
 
-    expect(game.answerLength).toEqual(event.answer.length);
+    expect(game.config).toEqual(event.config);
     expect(game.players).toEqual(event.players);
     expect(game.guesser).toEqual(0);
     expect(game.winner).toEqual(undefined);
@@ -25,16 +26,16 @@ describe('Game.fromNewGameEvent works', () => {
   it('ClientGameEvent works', () => {
     const event: NewClientGameEvent = {
       type: EventType.NEW_GAME_CLIENT,
-      answerLength: 4,
       players: ['a','b','c'],
       config: {
+        answerLength: 4,
         playerTimeoutMillis: 1000
       }
     };
 
     const game = Game.fromNewGameEvent(event);
 
-    expect(game.answerLength).toEqual(event.answerLength);
+    expect(game.config).toEqual(event.config);
     expect(game.players).toEqual(event.players);
     expect(game.guesser).toEqual(0);
     expect(game.winner).toEqual(undefined);
@@ -49,6 +50,7 @@ describe('Game.isFinished works', () => {
     answer: [1,2,3,4],
     players: ['a','b'],
     config: {
+      answerLength: 4,
       playerTimeoutMillis: 1000
     }
   }
@@ -83,6 +85,7 @@ describe('Game.handleEvent works', () => {
     answer: [1,2,3,4],
     players: ['a','b'],
     config: {
+      answerLength: 4,
       playerTimeoutMillis: 1000
     }
   }
@@ -163,13 +166,14 @@ describe('ServerGame.fromNewGameEvent works', () => {
       answer: [1,2,3,4],
       players: ['a','b','c'],
       config: {
+        answerLength: 4,
         playerTimeoutMillis: 1000
       }
     };
 
     const game = ServerGame.fromNewGameEvent(event);
 
-    expect(game.answerLength).toEqual(event.answer.length);
+    expect(game.config).toEqual(event.config);
     expect(game.players).toEqual(event.players);
     expect(game.guesser).toEqual(0);
     expect(game.winner).toEqual(undefined);
@@ -187,6 +191,7 @@ describe('ServerGame.makeGuess work', () => {
     answer: [1,2,3,4],
     players: ['a','b'],
     config: {
+      answerLength: 4,
       playerTimeoutMillis: 1000
     }
   }
@@ -275,6 +280,7 @@ describe('ServerGame.timeout work', () => {
     answer: [1,2,3,4],
     players: ['a','b'],
     config: {
+      answerLength: 4,
       playerTimeoutMillis: 1000
     }
   }

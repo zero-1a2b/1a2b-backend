@@ -1,7 +1,7 @@
 import { ServerGame, GuessRequest } from "./logic/game";
-import { GameEvent, EventType, NewServerGameEvent, isNormalEvent, NormalEvent } from './logic/event';
+import { GameEvent, EventType, NewServerGameEvent, isNormalEvent, NormalEvent, GameConfig } from './logic/event';
 import { Player } from './logic/player';
-import { shuffle, take, drop } from 'lodash-es';
+import { shuffle, take, drop } from 'lodash';
 import { clearTimeout } from 'timers';
 import { EventEmitter } from '../util/EventEmitter';
 
@@ -16,24 +16,24 @@ export class GameServer {
 
     static newGame(
         players: Player[], 
-        answerLength: number, 
-        guessTimeoutMillis: number
+        config: GameConfig
     ): GameServer {
-        if(!( 0<answerLength && answerLength<10 )) {
-            throw Error(`answer length ${answerLength} is not in range [1,9]`);
+        if(!( 0< config.answerLength && config.answerLength<10 )) {
+            throw Error(`answer length ${config.answerLength} is not in range [1,9]`);
+        }
+        if(config.playerTimeoutMillis<=0) {
+            throw Error('player timeout must be greater than zero!');
         }
         if(players.length==0) {
             throw Error(`players cannot be empty!`);
         }
         
-        const shuffledNumbers = take(shuffle([1,2,3,4,5,6,7,8,9]), answerLength)
+        const shuffledNumbers = take(shuffle([1,2,3,4,5,6,7,8,9]), config.answerLength)
         const event: NewServerGameEvent = {
             type: EventType.NEW_GAME_SERVER,
             answer: shuffledNumbers,
             players: shuffle(players),
-            config: {
-                playerTimeoutMillis: guessTimeoutMillis
-            }
+            config: config
         }
 
         return new GameServer([event]);

@@ -11,7 +11,6 @@ export class Game {
             case EventType.NEW_GAME_CLIENT: {
                 const e = event as NewClientGameEvent;
                 return new Game(
-                    e.answerLength,
                     e.players,
                     undefined,
                     0,
@@ -21,7 +20,6 @@ export class Game {
             case EventType.NEW_GAME_SERVER: {
                 const e = event as NewServerGameEvent;
                 return new Game(
-                    e.answer.length,
                     e.players,
                     undefined,
                     0,
@@ -33,7 +31,6 @@ export class Game {
 
 
     constructor(
-        readonly answerLength: number,
         readonly players: Player[],
         readonly winner: Player | undefined,
         readonly guesser: number,
@@ -50,7 +47,6 @@ export class Game {
         switch (event.type) {
             case EventType.TIMEOUT: {
                 return new Game(
-                    this.answerLength,
                     this.players,
                     this.winner,
                     (this.guesser+1) % this.players.length,
@@ -60,9 +56,8 @@ export class Game {
             case EventType.GUESS: {
                 const e = event as GuessEvent
                 return new Game(
-                    this.answerLength,
                     this.players,
-                    e.a === this.answerLength ? e.player : undefined,
+                    e.a === this.config.answerLength ? e.player : undefined,
                     (this.guesser+1) % this.players.length,
                     this.config
                 )
@@ -104,8 +99,6 @@ export class ServerGame {
         readonly answerDigits: Set<number>
     ) {}
 
-
-    get answerLength(): number { return this.game.answerLength; }
 
     get players(): Player[] { return this.game.players; }
 

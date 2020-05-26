@@ -5,10 +5,13 @@ describe('GameServer.newGame works', () => {
   
     it('works', () => {
         GameServer.newGame(
-            1,
             ['a','b'],
-            60*1000
+            {
+                answerLength: 4,
+                playerTimeoutMillis: 1000
+            }
         )
+        expect(1).toEqual(1);
     });
 
   });

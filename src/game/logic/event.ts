@@ -19,6 +19,8 @@ export interface GameConfig {
 
     readonly playerTimeoutMillis: number
 
+    readonly answerLength: number;
+
 };
 
 export interface NewGameEvent extends GameEvent {
@@ -38,8 +40,6 @@ export function isNewGameEvent(e: GameEvent): e is NewGameEvent {
 export interface NewClientGameEvent extends NewGameEvent {
 
     readonly type: EventType.NEW_GAME_CLIENT;
-
-    readonly answerLength: number;
 
 }
 
