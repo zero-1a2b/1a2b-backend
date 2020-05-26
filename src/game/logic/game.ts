@@ -70,7 +70,7 @@ export class Game {
 
 // client-side game states //
 
-export class ClientGame {
+export class ClientGame extends Game {
 
     static fromNewGameEvent(event: NewClientGameEvent): ClientGame {
         return new ClientGame(
@@ -81,18 +81,9 @@ export class ClientGame {
 
     constructor(
         readonly game: Game
-    ) {}
-
-
-    get players(): Player[] { return this.game.players; }
-
-    get winner(): Player | undefined { return this.game.winner; }
-
-    get guesser(): number { return this.game.guesser; }
-
-    get config(): GameConfig { return this.game.config; }
-
-    isFinished(): boolean { return this.game.isFinished(); }
+    ) {
+        super(game.players, game.winner, game.guesser, game.config);
+    }
 
 
     handleEvent(event: NormalEvent): ClientGame {
@@ -113,7 +104,7 @@ export interface GuessRequest {
 
 }
 
-export class ServerGame {
+export class ServerGame extends Game {
 
     static fromNewGameEvent(event: NewServerGameEvent): ServerGame {
         return new ServerGame(
@@ -125,28 +116,20 @@ export class ServerGame {
 
 
     constructor(
-        readonly game: Game,
+        game: Game,
         readonly answer: number[],
         readonly answerDigits: Set<number>
-    ) {}
+    ) {
+        super(game.players, game.winner, game.guesser, game.config);
+    }
 
-
-    get players(): Player[] { return this.game.players; }
-
-    get winner(): Player | undefined { return this.game.winner; }
-
-    get guesser(): number { return this.game.guesser; }
-
-    get config(): GameConfig { return this.game.config; }
-
-    isFinished(): boolean { return this.game.isFinished(); }
 
     timeout(): TimeoutEvent {
         return { type: EventType.TIMEOUT }
     }
 
     makeGuess(req: GuessRequest): GuessEvent | Error {
-        if(this.game.isFinished()) {
+        if(this.isFinished()) {
             return Error("error.game_already_end");
         }
         if(this.players[this.guesser]!==req.player) {
@@ -188,7 +171,7 @@ export class ServerGame {
 
     handleEvent(event: NormalEvent): ServerGame {
         return new ServerGame(
-            this.game.handleEvent(event),
+            super.handleEvent(event),
             this.answer,
             this.answerDigits
         );
