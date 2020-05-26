@@ -70,7 +70,38 @@ export class Game {
 
 // client-side game states //
 
-export type ClientGame = Game
+export class ClientGame {
+
+    static fromNewGameEvent(event: NewClientGameEvent): ClientGame {
+        return new ClientGame(
+            Game.fromNewGameEvent(event)
+        );
+    }
+
+
+    constructor(
+        readonly game: Game
+    ) {}
+
+
+    get players(): Player[] { return this.game.players; }
+
+    get winner(): Player | undefined { return this.game.winner; }
+
+    get guesser(): number { return this.game.guesser; }
+
+    get config(): GameConfig { return this.game.config; }
+
+    isFinished(): boolean { return this.game.isFinished(); }
+
+
+    handleEvent(event: NormalEvent): ClientGame {
+        return new ClientGame(
+            this.game.handleEvent(event)
+        );
+    }
+
+}
 
 // server-side game states //
 

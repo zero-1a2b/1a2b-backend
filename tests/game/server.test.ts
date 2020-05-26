@@ -137,7 +137,7 @@ describe('GameServer.newGame works', () => {
 
 });
 
-describe('GameServer\'s constructor works', () => {
+describe('GameServer constructor works', () => {
 
     const newGame: NewServerGameEvent = {
         type: EventType.NEW_GAME_SERVER,
@@ -159,7 +159,7 @@ describe('GameServer\'s constructor works', () => {
 
 });
 
-describe('GameServer\'s lifecycle functions works', () => {
+describe('GameServer lifecycle functions works', () => {
 
     it('works', () => {
         const game = newGameServer();
@@ -202,7 +202,7 @@ describe('GameServer\'s lifecycle functions works', () => {
 
 });
 
-describe('GameServer\'s command works', () => {
+describe('GameServer command works', () => {
 
     it('makeGuess works', () => {
         const game = newGameServer();
@@ -272,7 +272,7 @@ describe('GameServer\'s command works', () => {
 
 });
 
-describe('GameServer\'s eventing works', () => {
+describe('GameServer eventing works', () => {
 
     it('eventing works', () => {
         let called: GuessEvent;
