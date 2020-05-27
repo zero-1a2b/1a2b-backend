@@ -7,10 +7,10 @@ export enum RoomEventType {
     PLAYER_JOIN,
     PLAYER_LEFT,
     PLAYER_RENAME,
-    
+
     PLAYER_READY,
     PLAYER_UNREADY,
-    
+
     GAME_STARTED,
     GAME_EVENT,
     GAME_FINISHED
@@ -31,7 +31,22 @@ export interface NewRoomEvent extends RoomEvent {
 
 }
 
-export interface ChangeSettingsEvent extends RoomEvent {
+export interface NormalRoomEvent extends RoomEvent {
+
+    readonly type:
+        RoomEventType.CHANGE_SETTINGS
+        | RoomEventType.PLAYER_JOIN
+        | RoomEventType.PLAYER_LEFT
+        | RoomEventType.PLAYER_RENAME
+        | RoomEventType.PLAYER_READY
+        | RoomEventType.PLAYER_UNREADY
+        | RoomEventType.GAME_STARTED
+        | RoomEventType.GAME_EVENT
+        | RoomEventType.GAME_FINISHED
+
+}
+
+export interface ChangeSettingsEvent extends NormalRoomEvent {
 
     readonly type: RoomEventType.CHANGE_SETTINGS;
 
@@ -40,7 +55,7 @@ export interface ChangeSettingsEvent extends RoomEvent {
 }
 
 
-export interface PlayerJoinEvent extends RoomEvent {
+export interface PlayerJoinEvent extends NormalRoomEvent {
 
     readonly type: RoomEventType.PLAYER_JOIN;
 
@@ -48,7 +63,7 @@ export interface PlayerJoinEvent extends RoomEvent {
 
 }
 
-export interface PlayerLeftEvent extends RoomEvent {
+export interface PlayerLeftEvent extends NormalRoomEvent {
 
     readonly type: RoomEventType.PLAYER_LEFT;
 
@@ -56,7 +71,7 @@ export interface PlayerLeftEvent extends RoomEvent {
 
 }
 
-export interface PlayerRenameEvent extends RoomEvent {
+export interface PlayerRenameEvent extends NormalRoomEvent {
 
     readonly type: RoomEventType.PLAYER_RENAME;
 
@@ -67,23 +82,23 @@ export interface PlayerRenameEvent extends RoomEvent {
 }
 
 
-export interface PlayerReadyEvent extends RoomEvent {
+export interface PlayerReadyEvent extends NormalRoomEvent {
 
     readonly type: RoomEventType.PLAYER_READY;
 
-    readonly player: string;
+    readonly name: string;
 
 }
 
-export interface PlayerUnreadyEvent extends RoomEvent {
+export interface PlayerUnreadyEvent extends NormalRoomEvent {
 
     readonly type: RoomEventType.PLAYER_UNREADY;
 
-    readonly player: string;
+    readonly name: string;
 
 }
 
-export interface GameStartedEvent extends RoomEvent {
+export interface GameStartedEvent extends NormalRoomEvent {
 
     readonly type: RoomEventType.GAME_STARTED;
 
@@ -91,7 +106,7 @@ export interface GameStartedEvent extends RoomEvent {
 
 }
 
-export interface GameEvent extends RoomEvent {
+export interface RoomGameEvent extends NormalRoomEvent {
 
     readonly type: RoomEventType.GAME_EVENT;
 
@@ -99,10 +114,8 @@ export interface GameEvent extends RoomEvent {
 
 }
 
-export interface GameFinishedEvent extends RoomEvent {
+export interface GameFinishedEvent extends NormalRoomEvent {
 
     readonly type: RoomEventType.GAME_FINISHED;
-
-    readonly player: string;
 
 }
