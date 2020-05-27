@@ -53,8 +53,8 @@ describe('Game.isFinished works', () => {
       answerLength: 4,
       playerTimeoutMillis: 1000
     }
-  }
-  const game: Game = Game.fromNewGameEvent(e)
+  };
+  const game: Game = Game.fromNewGameEvent(e);
 
   it('no winner, no finish', () => {
     expect(game.winner).toEqual(undefined);
@@ -71,7 +71,7 @@ describe('Game.isFinished works', () => {
     };
 
     const game2 = game.handleEvent(event2);
-    
+
     expect(game2.winner).not.toBeUndefined();
     expect(game2.isFinished()).toEqual(true);
   });
@@ -98,7 +98,7 @@ describe('Game.handleEvent works', () => {
     };
 
     const game2 = game.handleEvent(event);
-    
+
     expect(game2.guesser).toEqual(1);
 
 
@@ -123,7 +123,7 @@ describe('Game.handleEvent works', () => {
     };
 
     const game2 = game.handleEvent(event);
-    
+
     expect(game2.guesser).toEqual(1);
 
     const event2: GuessEvent = {
@@ -135,7 +135,7 @@ describe('Game.handleEvent works', () => {
     };
 
     const game3 = game2.handleEvent(event2);
-    
+
     expect(game3.guesser).toEqual(0);
 
     //should label win correctly
@@ -149,7 +149,7 @@ describe('Game.handleEvent works', () => {
     };
 
     const game4 = game3.handleEvent(event3);
-    
+
     expect(game4.guesser).toEqual(1);
     expect(game4.winner).toEqual('a');
 

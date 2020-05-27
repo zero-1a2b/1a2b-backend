@@ -6,6 +6,11 @@ import { TimeoutEvent } from './event';
 
 export class Game {
 
+    static DEFAULT_GAME_CONFIG: GameConfig = {
+        answerLength: 4,
+        playerTimeoutMillis: 60*1000
+    };
+
     static fromNewGameEvent(event: NewGameEvent): Game {
         switch (event.type) {
             case EventType.NEW_GAME_CLIENT: {
@@ -41,7 +46,7 @@ export class Game {
     isFinished(): boolean {
         return this.winner != undefined;
     }
-    
+
 
     handleEvent(event: NormalEvent): Game {
         switch (event.type) {
@@ -137,7 +142,7 @@ export class ServerGame extends Game {
         }
 
         const checked = this.checkGuess(req.guess);
-        
+
         if(checked instanceof Error) {
             return checked;
         } else {
@@ -159,12 +164,12 @@ export class ServerGame extends Game {
             .filter(v=>v[0]===v[1])
             .length
             ;
-    
+
         const b = zip(guess, this.answer)
             .filter(v=>v[0]!==v[1] && this.answerDigits.has(v[0]))
             .length
             ;
-    
+
         return {a:a, b:b};
     }
 
