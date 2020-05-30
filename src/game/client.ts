@@ -1,4 +1,4 @@
-import { NewClientGameEvent, NormalEvent, GameEventType, GuessEvent } from './logic/event';
+import { NewClientGameEvent, NormalEvent, GameEventType, GuessEvent } from './logic/game.event';
 import { GameState } from './server';
 import { ClientGame } from './logic/client-game';
 

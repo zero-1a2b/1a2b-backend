@@ -7,7 +7,7 @@ import {
   NewGameEvent,
   NewServerGameEvent,
   NormalEvent,
-} from './event';
+} from './game.event';
 
 
 export class Game {
@@ -77,6 +77,4 @@ export class Game {
     }
 
 }
-
-// server-side game states //
 

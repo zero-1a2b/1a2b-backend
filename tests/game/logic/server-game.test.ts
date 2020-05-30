@@ -1,5 +1,6 @@
-import { GameEventType, GuessEvent, NewServerGameEvent, TimeoutEvent } from '../../../src/game/logic/event';
-import { GuessRequest, ServerGame, ServerGameRequestType, TimeoutRequest } from '../../../src/game/logic/server-game';
+import { GameEventType, GuessEvent, NewServerGameEvent, TimeoutEvent } from '../../../src/game/logic/game.event';
+import { ServerGame} from '../../../src/game/logic/server-game';
+import { GuessRequest, ServerGameRequestType, TimeoutRequest } from '../../../src/game/logic/server-game.request';
 
 
 describe('ServerGame.fromNewGameEvent works', () => {

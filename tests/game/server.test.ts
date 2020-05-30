@@ -1,6 +1,6 @@
 import { GameServer, GameState } from '../../src/game/server';
-import { GameEvent, GameEventType, GuessEvent, NewServerGameEvent, NormalEvent } from '../../src/game/logic/event';
-import { GuessRequest, ServerGameRequestType } from '../../src/game/logic/server-game';
+import { GameEvent, GameEventType, GuessEvent, NewServerGameEvent, NormalEvent } from '../../src/game/logic/game.event';
+import { GuessRequest, ServerGameRequestType } from '../../src/game/logic/server-game.request';
 
 function newGameServer(): GameServer {
   return GameServer.newGame(

@@ -1,4 +1,4 @@
-import { NewServerGameEvent, GameEventType, NewClientGameEvent, TimeoutEvent, GuessEvent } from "../../../src/game/logic/event";
+import { NewServerGameEvent, GameEventType, NewClientGameEvent, TimeoutEvent, GuessEvent } from "../../../src/game/logic/game.event";
 import { Game } from '../../../src/game/logic/game';
 
 

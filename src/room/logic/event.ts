@@ -1,4 +1,4 @@
-import { GameConfig, NormalEvent, NewServerGameEvent, NewClientGameEvent } from '../../game/logic/event';
+import { GameConfig, NormalEvent, NewServerGameEvent, NewClientGameEvent } from '../../game/logic/game.event';
 
 export enum RoomEventType {
     NEW_ROOM,

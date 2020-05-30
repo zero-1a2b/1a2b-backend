@@ -12,7 +12,7 @@ import {
   RoomEventType,
   RoomGameEvent,
 } from './event';
-import { GameConfig } from '../../game/logic/event';
+import { GameConfig } from '../../game/logic/game.event';
 import { Game } from '../../game/logic/game';
 import { map, filter } from 'lodash';
 

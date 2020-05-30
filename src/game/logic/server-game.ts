@@ -1,35 +1,7 @@
-import { GameEventType, GuessEvent, NewServerGameEvent, NormalEvent, TimeoutEvent } from './event';
+import { GameEventType, GuessEvent, NewServerGameEvent, NormalEvent, TimeoutEvent } from './game.event';
 import { zip } from 'lodash';
-import { Player } from './player';
 import { Game } from './game';
-
-
-export enum ServerGameRequestType {
-  GUESS,
-  TIMEOUT
-}
-
-export interface ServerGameRequest {
-
-  readonly type: ServerGameRequestType
-
-}
-
-export interface GuessRequest extends ServerGameRequest {
-
-  readonly type: ServerGameRequestType.GUESS;
-
-  readonly guess: number[];
-
-  readonly player: Player;
-
-}
-
-export interface TimeoutRequest extends ServerGameRequest {
-
-  readonly type: ServerGameRequestType.TIMEOUT;
-
-}
+import { GuessRequest, ServerGameRequest, ServerGameRequestType, TimeoutRequest } from './server-game.request';
 
 
 export class ServerGame extends Game {

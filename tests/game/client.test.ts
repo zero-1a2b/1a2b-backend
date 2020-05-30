@@ -1,5 +1,5 @@
 import { GameClient } from "../../src/game/client";
-import { GameEventType, GuessEvent } from '../../src/game/logic/event';
+import { GameEventType, GuessEvent } from '../../src/game/logic/game.event';
 import { GameState } from '../../src/game/server';
 
 
@@ -97,7 +97,7 @@ describe('GameClient accepting event works', () => {
             b: 0
         } as GuessEvent)
         expect(game2.state).toEqual(GameState.FINISHED);
-        
+
     });
 
 });

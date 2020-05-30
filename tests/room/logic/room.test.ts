@@ -12,7 +12,7 @@ import {
 } from '../../../src/room/logic/event';
 import { Room, RoomState } from '../../../src/room/logic/room';
 import { Game } from '../../../src/game/logic/game';
-import { GameEventType } from '../../../src/game/logic/event';
+import { GameEventType } from '../../../src/game/logic/game.event';
 
 describe('Room.fromNewRoomEvent works', () => {
 
