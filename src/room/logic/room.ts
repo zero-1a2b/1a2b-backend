@@ -11,7 +11,7 @@ import {
   PlayerUnreadyEvent,
   RoomEventType,
   RoomGameEvent,
-} from './event';
+} from './room.event';
 import { GameConfig } from '../../game/logic/game.event';
 import { Game } from '../../game/logic/game';
 import { map, filter } from 'lodash';

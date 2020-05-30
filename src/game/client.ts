@@ -2,6 +2,7 @@ import { NewClientGameEvent, NormalEvent, GameEventType, GuessEvent } from './lo
 import { GameState } from './server';
 import { ClientGame } from './logic/client-game';
 
+
 export class GameClient {
 
     static newGame(event: NewClientGameEvent): GameClient {

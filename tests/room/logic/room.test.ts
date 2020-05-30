@@ -9,7 +9,7 @@ import {
   PlayerUnreadyEvent,
   RoomEventType,
   RoomGameEvent,
-} from '../../../src/room/logic/event';
+} from '../../../src/room/logic/room.event';
 import { Room, RoomState } from '../../../src/room/logic/room';
 import { Game } from '../../../src/game/logic/game';
 import { GameEventType } from '../../../src/game/logic/game.event';
