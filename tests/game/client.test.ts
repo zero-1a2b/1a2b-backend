@@ -1,12 +1,12 @@
 import { GameClient } from "../../src/game/client";
-import { EventType, GuessEvent } from '../../src/game/logic/event';
+import { GameEventType, GuessEvent } from '../../src/game/logic/event';
 import { GameState } from '../../src/game/server';
 
 
 function newGameClient(): GameClient {
     return GameClient.newGame(
         {
-            type: EventType.NEW_GAME_CLIENT,
+            type: GameEventType.NEW_GAME_CLIENT,
             players: ['a', 'b'],
             config: {
                 answerLength: 4,
@@ -21,7 +21,7 @@ describe('GameClient.newGame works', () => {
     it('works', () => {
         const game = GameClient.newGame(
             {
-                type: EventType.NEW_GAME_CLIENT,
+                type: GameEventType.NEW_GAME_CLIENT,
                 players: ['a', 'b'],
                 config: {
                     answerLength: 4,
@@ -46,7 +46,7 @@ describe('GameClient constructor works', () => {
     it('works', () => {
         const game = new GameClient(
             {
-                type: EventType.NEW_GAME_CLIENT,
+                type: GameEventType.NEW_GAME_CLIENT,
                 players: ['a', 'b'],
                 config: {
                     answerLength: 4,
@@ -71,12 +71,12 @@ describe('GameClient accepting event works', () => {
     it('works', () => {
         const game = newGameClient();
         game.acceptEvent({
-            type: EventType.TIMEOUT
+            type: GameEventType.TIMEOUT
         });
         expect(game.state).toEqual(GameState.RUNNING);
 
         game.acceptEvent({
-            type: EventType.GUESS,
+            type: GameEventType.GUESS,
             player: 'a',
             guess: [1,2,3,4],
             a: 4,
@@ -90,7 +90,7 @@ describe('GameClient accepting event works', () => {
 
         const game2 = newGameClient();
         game2.acceptEvent({
-            type: EventType.GUESS,
+            type: GameEventType.GUESS,
             player: 'a',
             guess: [1,2,3,4],
             a: 4,

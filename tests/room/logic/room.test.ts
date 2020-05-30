@@ -12,7 +12,7 @@ import {
 } from '../../../src/room/logic/event';
 import { Room, RoomState } from '../../../src/room/logic/room';
 import { Game } from '../../../src/game/logic/game';
-import { EventType } from '../../../src/game/logic/event';
+import { GameEventType } from '../../../src/game/logic/event';
 
 describe('Room.fromNewRoomEvent works', () => {
 
@@ -56,7 +56,7 @@ describe('Room handles event correctly', () => {
   const startedEvent: GameStartedEvent = {
     type: RoomEventType.GAME_STARTED,
     event: {
-      type: EventType.NEW_GAME_CLIENT,
+      type: GameEventType.NEW_GAME_CLIENT,
       config: Game.DEFAULT_GAME_CONFIG,
       players: ['test']
     }
@@ -65,7 +65,7 @@ describe('Room handles event correctly', () => {
   const gameEvent: RoomGameEvent = {
     type: RoomEventType.GAME_EVENT,
     event: {
-      type: EventType.TIMEOUT
+      type: GameEventType.TIMEOUT
     }
   };
 

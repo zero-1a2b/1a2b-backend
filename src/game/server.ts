@@ -1,8 +1,8 @@
-import { ServerGame, GuessRequest } from "./logic/game";
-import { GameEvent, EventType, NewServerGameEvent, NormalEvent, GameConfig } from './logic/event';
+import { GameConfig, GameEvent, GameEventType, NewServerGameEvent, NormalEvent } from './logic/event';
 import { Player } from './logic/player';
 import { shuffle, take } from 'lodash';
 import { EventEmitter } from '../util/EventEmitter';
+import { ServerGame, ServerGameRequest, ServerGameRequestType } from './logic/server-game';
 
 
 export enum GameState {
@@ -31,7 +31,7 @@ export class GameServer {
             throw Error(`players cannot be empty!`);
         }
 
-        let shuffledNumbers = []
+        let shuffledNumbers = [];
         if(extra.answer!==undefined) {
             if(extra.answer.length != config.answerLength) {
                 throw Error("the length of given answer is not equal to config ");
@@ -41,7 +41,7 @@ export class GameServer {
             shuffledNumbers = take(shuffle([1,2,3,4,5,6,7,8,9]), config.answerLength)
         }
 
-        let shuffledPlayers = []
+        let shuffledPlayers;
         if(extra.players!==undefined) {
             shuffledPlayers = extra.players
         } else {
@@ -49,11 +49,11 @@ export class GameServer {
         }
 
         const event: NewServerGameEvent = {
-            type: EventType.NEW_GAME_SERVER,
+            type: GameEventType.NEW_GAME_SERVER,
             answer: shuffledNumbers,
             players: shuffledPlayers,
             config: config
-        }
+        };
 
         return new GameServer(event);
     }
@@ -80,6 +80,7 @@ export class GameServer {
         this._timeout = undefined;
     }
 
+    // eventing
 
     acceptEvent(e: NormalEvent): void {
         this._game = this._game.handleEvent(e);
@@ -126,26 +127,16 @@ export class GameServer {
 
     // operations for calling
 
-    makeGuess(req: GuessRequest): void {
-        const ret = this._game.makeGuess(req)
-        if(ret instanceof Error) {
-            throw ret;
-        }
+    handleRequest(req: ServerGameRequest): void {
+      const ret = this._game.handleRequest(req);
+      if(ret instanceof Error) {
+        throw ret;
+      }
 
-        this.emitEvent(ret);
-        this.resetTimeoutTimer();
+      this.emitEvent(ret);
+      this.resetTimeoutTimer();
 
-        this.stopIfGameFinished();
-    }
-
-    private timeoutPlayer(): void {
-        this.emitEvent({
-            type: EventType.TIMEOUT
-        });
-
-        this.resetTimeoutTimer();
-
-        this.stopIfGameFinished();
+      this.stopIfGameFinished();
     }
 
     private stopIfGameFinished(): void {
@@ -166,7 +157,7 @@ export class GameServer {
             throw new Error("there is already a timer!");
         }
 
-        this._timeout = setTimeout(()=>{this.timeoutPlayer()}, this.game.config.playerTimeoutMillis);
+        this._timeout = setTimeout(()=>{this.handleRequest({ type: ServerGameRequestType.TIMEOUT })}, this.game.config.playerTimeoutMillis);
     }
 
     private stopTimeoutTimer(): void {

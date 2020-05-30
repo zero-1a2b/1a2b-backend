@@ -1,6 +1,6 @@
-import { NewClientGameEvent, NormalEvent, EventType, GuessEvent } from './logic/event';
+import { NewClientGameEvent, NormalEvent, GameEventType, GuessEvent } from './logic/event';
 import { GameState } from './server';
-import { ClientGame } from './logic/game';
+import { ClientGame } from './logic/client-game';
 
 export class GameClient {
 
@@ -27,7 +27,7 @@ export class GameClient {
         if(this._state === GameState.READY) {
             this._state = GameState.RUNNING;
         }
-        if(e.type === EventType.GUESS && (e as GuessEvent).a === this._game.config.answerLength) {
+        if(e.type === GameEventType.GUESS && (e as GuessEvent).a === this._game.config.answerLength) {
             this._state = GameState.FINISHED;
         }
     }

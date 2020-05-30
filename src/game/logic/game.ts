@@ -1,7 +1,13 @@
-import { zip } from 'lodash';
 import { Player } from './player';
-import { EventType, NewGameEvent, NewClientGameEvent, NewServerGameEvent, NormalEvent, GuessEvent, GameConfig } from './event';
-import { TimeoutEvent } from './event';
+import {
+  GameConfig,
+  GameEventType,
+  GuessEvent,
+  NewClientGameEvent,
+  NewGameEvent,
+  NewServerGameEvent,
+  NormalEvent,
+} from './event';
 
 
 export class Game {
@@ -13,7 +19,7 @@ export class Game {
 
     static fromNewGameEvent(event: NewGameEvent): Game {
         switch (event.type) {
-            case EventType.NEW_GAME_CLIENT: {
+            case GameEventType.NEW_GAME_CLIENT: {
                 const e = event as NewClientGameEvent;
                 return new Game(
                     e.players,
@@ -22,7 +28,7 @@ export class Game {
                     e.config
                 );
             }
-            case EventType.NEW_GAME_SERVER: {
+            case GameEventType.NEW_GAME_SERVER: {
                 const e = event as NewServerGameEvent;
                 return new Game(
                     e.players,
@@ -50,7 +56,7 @@ export class Game {
 
     handleEvent(event: NormalEvent): Game {
         switch (event.type) {
-            case EventType.TIMEOUT: {
+            case GameEventType.TIMEOUT: {
                 return new Game(
                     this.players,
                     this.winner,
@@ -58,8 +64,8 @@ export class Game {
                     this.config
                 )
             }
-            case EventType.GUESS: {
-                const e = event as GuessEvent
+            case GameEventType.GUESS: {
+                const e = event as GuessEvent;
                 return new Game(
                     this.players,
                     e.a === this.config.answerLength ? e.player : undefined,
@@ -72,114 +78,5 @@ export class Game {
 
 }
 
-
-// client-side game states //
-
-export class ClientGame extends Game {
-
-    static fromNewGameEvent(event: NewClientGameEvent): ClientGame {
-        return new ClientGame(
-            Game.fromNewGameEvent(event)
-        );
-    }
-
-
-    constructor(
-        readonly game: Game
-    ) {
-        super(game.players, game.winner, game.guesser, game.config);
-    }
-
-
-    handleEvent(event: NormalEvent): ClientGame {
-        return new ClientGame(
-            this.game.handleEvent(event)
-        );
-    }
-
-}
-
 // server-side game states //
 
-export interface GuessRequest {
-
-    readonly guess: number[];
-
-    readonly player: Player;
-
-}
-
-export class ServerGame extends Game {
-
-    static fromNewGameEvent(event: NewServerGameEvent): ServerGame {
-        return new ServerGame(
-            Game.fromNewGameEvent(event),
-            event.answer,
-            new Set(event.answer)
-        );
-    }
-
-
-    constructor(
-        game: Game,
-        readonly answer: number[],
-        readonly answerDigits: Set<number>
-    ) {
-        super(game.players, game.winner, game.guesser, game.config);
-    }
-
-
-    timeout(): TimeoutEvent {
-        return { type: EventType.TIMEOUT }
-    }
-
-    makeGuess(req: GuessRequest): GuessEvent | Error {
-        if(this.isFinished()) {
-            return Error("error.game_already_end");
-        }
-        if(this.players[this.guesser]!==req.player) {
-            return Error("error.not_your_round");
-        }
-
-        const checked = this.checkGuess(req.guess);
-
-        if(checked instanceof Error) {
-            return checked;
-        } else {
-            return {
-                type: EventType.GUESS,
-                player: req.player,
-                guess: req.guess,
-                ...checked
-            }
-        }
-    }
-
-    private checkGuess(guess: number[]): {a:number;b:number} | Error {
-        if(guess.length!==this.answer.length) {
-            return Error("error.answer_length_mismatch");
-        }
-
-        const a = zip(guess, this.answer)
-            .filter(v=>v[0]===v[1])
-            .length
-            ;
-
-        const b = zip(guess, this.answer)
-            .filter(v=>v[0]!==v[1] && this.answerDigits.has(v[0]))
-            .length
-            ;
-
-        return {a:a, b:b};
-    }
-
-
-    handleEvent(event: NormalEvent): ServerGame {
-        return new ServerGame(
-            super.handleEvent(event),
-            this.answer,
-            this.answerDigits
-        );
-    }
-
-}

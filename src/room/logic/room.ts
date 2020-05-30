@@ -16,6 +16,7 @@ import { GameConfig } from '../../game/logic/event';
 import { Game } from '../../game/logic/game';
 import { map, filter } from 'lodash';
 
+
 export enum RoomState {
   IDLE,
   GAMING,
@@ -157,15 +158,5 @@ export class Room {
       this.gameConfig,
     );
   }
-
-}
-
-export class ClientRoom {
-
-  readonly;
-
-}
-
-export class ServerRoom {
 
 }

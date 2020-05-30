@@ -1,7 +1,7 @@
 import { Player } from './player';
 
 
-export enum EventType {
+export enum GameEventType {
     NEW_GAME_CLIENT,
     NEW_GAME_SERVER,
     TIMEOUT,
@@ -11,7 +11,7 @@ export enum EventType {
 
 export interface GameEvent {
 
-    readonly type: EventType;
+    readonly type: GameEventType;
 
 };
 
@@ -25,7 +25,7 @@ export interface GameConfig {
 
 export interface NewGameEvent extends GameEvent {
 
-    readonly type: EventType.NEW_GAME_CLIENT | EventType.NEW_GAME_SERVER;
+    readonly type: GameEventType.NEW_GAME_CLIENT | GameEventType.NEW_GAME_SERVER;
 
     readonly players: Player[];
 
@@ -34,18 +34,18 @@ export interface NewGameEvent extends GameEvent {
 }
 
 export function isNewGameEvent(e: GameEvent): e is NewGameEvent {
-    return e.type === EventType.NEW_GAME_CLIENT || e.type === EventType.NEW_GAME_SERVER;
+    return e.type === GameEventType.NEW_GAME_CLIENT || e.type === GameEventType.NEW_GAME_SERVER;
 }
 
 export interface NewClientGameEvent extends NewGameEvent {
 
-    readonly type: EventType.NEW_GAME_CLIENT;
+    readonly type: GameEventType.NEW_GAME_CLIENT;
 
 }
 
 export interface NewServerGameEvent extends NewGameEvent {
 
-    readonly type: EventType.NEW_GAME_SERVER;
+    readonly type: GameEventType.NEW_GAME_SERVER;
 
     readonly answer: number[];
 
@@ -54,7 +54,7 @@ export interface NewServerGameEvent extends NewGameEvent {
 
 export interface NormalEvent extends GameEvent {
 
-    readonly type: EventType.GUESS | EventType.TIMEOUT;
+    readonly type: GameEventType.GUESS | GameEventType.TIMEOUT;
 
 }
 
@@ -64,13 +64,13 @@ export function isNormalEvent(e: GameEvent): e is NormalEvent {
 
 export interface TimeoutEvent extends NormalEvent {
 
-    readonly type: EventType.TIMEOUT;
+    readonly type: GameEventType.TIMEOUT;
 
 }
 
 export interface GuessEvent extends NormalEvent {
 
-    readonly type: EventType.GUESS;
+    readonly type: GameEventType.GUESS;
 
     readonly player: Player;
 
