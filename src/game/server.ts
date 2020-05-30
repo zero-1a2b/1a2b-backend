@@ -1,8 +1,7 @@
-import { GameConfig, GameEvent, GameEventType, NewServerGameEvent, NormalEvent } from './logic/game.event';
+import { GameConfig, GameEvent, NewServerGameEvent, NormalEvent } from './logic/game.event';
 import { Player } from './logic/player';
-import { shuffle, take } from 'lodash';
 import { EventEmitter } from '../util/EventEmitter';
-import { ServerGame} from './logic/server-game';
+import { newServerGameEvent, ServerGame } from './logic/server-game';
 import { ServerGameRequest, ServerGameRequestType } from './logic/server-game.request';
 
 
@@ -22,41 +21,7 @@ export class GameServer {
             players?: Player[]
         } = {}
     ): GameServer {
-        if(!( 0< config.answerLength && config.answerLength<10 )) {
-            throw Error(`answer length ${config.answerLength} is not in range [1,9]`);
-        }
-        if(config.playerTimeoutMillis<=0) {
-            throw Error('player timeout must be greater than zero!');
-        }
-        if(players.length==0) {
-            throw Error(`players cannot be empty!`);
-        }
-
-        let shuffledNumbers = [];
-        if(extra.answer!==undefined) {
-            if(extra.answer.length != config.answerLength) {
-                throw Error("the length of given answer is not equal to config ");
-            }
-            shuffledNumbers = extra.answer
-        } else {
-            shuffledNumbers = take(shuffle([1,2,3,4,5,6,7,8,9]), config.answerLength)
-        }
-
-        let shuffledPlayers;
-        if(extra.players!==undefined) {
-            shuffledPlayers = extra.players
-        } else {
-            shuffledPlayers = shuffle(players)
-        }
-
-        const event: NewServerGameEvent = {
-            type: GameEventType.NEW_GAME_SERVER,
-            answer: shuffledNumbers,
-            players: shuffledPlayers,
-            config: config
-        };
-
-        return new GameServer(event);
+        return new GameServer(newServerGameEvent(players, config, extra));
     }
 
 

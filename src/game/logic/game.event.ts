@@ -13,7 +13,7 @@ export interface GameEvent {
 
     readonly type: GameEventType;
 
-};
+}
 
 export interface GameConfig {
 
@@ -21,7 +21,7 @@ export interface GameConfig {
 
     readonly answerLength: number;
 
-};
+}
 
 export interface NewGameEvent extends GameEvent {
 
@@ -75,9 +75,9 @@ export interface GuessEvent extends NormalEvent {
     readonly player: Player;
 
     readonly guess: number[];
-    
+
     readonly a: number;
-    
+
     readonly b: number;
 
 }
