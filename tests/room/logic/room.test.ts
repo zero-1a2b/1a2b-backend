@@ -428,7 +428,7 @@ describe('Room handles GameStarted Correctly', () => {
     const preRoom = room.handleEvent(joinEvent).handleEvent(readyEvent).handleEvent(startedEvent);
     const event = preRoom.handleRequest(req) as GameStartedEvent;
 
-    expect(event.type).toEqual(RoomEventType.GAME_STARTED);
+    expect(event).toBeInstanceOf(Error);
   });
 
 });
