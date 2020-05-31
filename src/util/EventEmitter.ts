@@ -1,7 +1,7 @@
 export type EventListener<T> = (T)=>void
 
 export class Subscription {
-    
+
     constructor(
         readonly emitter: EventEmitter<unknown>,
         readonly listener: EventListener<unknown>
@@ -16,14 +16,14 @@ export class Subscription {
 export class EventEmitter<T> {
 
     get listeners(): Set<EventListener<T>> { return this._listeners; }
-    private _listeners: Set<EventListener<T>>
+    private _listeners: Set<EventListener<T>>;
 
     constructor() {
         this._listeners = new Set()
     }
 
     subscribe(listener: EventListener<T>): Subscription {
-        this._listeners.add(listener)
+        this._listeners.add(listener);
         return new Subscription(this, listener)
     }
 

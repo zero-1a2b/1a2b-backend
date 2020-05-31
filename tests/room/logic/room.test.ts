@@ -290,7 +290,7 @@ describe('Room handles PlayerConnect Correctly', () => {
 
 });
 
-describe('Room handles PlayerDisConnect Correctly', () => {
+describe('Room handles PlayerDisconnect Correctly', () => {
 
   it('removes player on idle state', () => {
     const req: PlayerDisconnectRequest = {

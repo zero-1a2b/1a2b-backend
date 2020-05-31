@@ -8,7 +8,7 @@ import {
   PlayerLeftEvent,
   PlayerReadyEvent,
   PlayerRenameEvent,
-  PlayerUnreadyEvent,
+  PlayerUnreadyEvent, RoomClosedEvent,
   RoomEventType,
   RoomGameEvent,
 } from './room.event';
@@ -168,6 +168,8 @@ export class Room {
           return this.handleGameEvent(event);
       case RoomEventType.GAME_FINISHED:
           return this.handleGameFinishedEvent(event);
+      case RoomEventType.ROOM_CLOSED:
+        return this.handleRoomClosedEvent(event);
     }
   }
 
@@ -227,6 +229,11 @@ export class Room {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private handleGameFinishedEvent(_e: GameFinishedEvent): Room {
+    return this.setRoomState(RoomState.FINISHED);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private handleRoomClosedEvent(_e: RoomClosedEvent): Room {
     return this.setRoomState(RoomState.FINISHED);
   }
 

@@ -3,10 +3,10 @@ import { Room, RoomState } from './logic/room';
 import { GameClient } from '../game/client';
 import { NewClientGameEvent } from '../game/logic/game.event';
 
-class RoomClient {
 
-  public get state(): RoomState { return this._state; }
-  private _state: RoomState;
+export class RoomClient {
+
+  public get state(): RoomState { return this.room.state; }
 
   public get room(): Room { return this._room; }
   private _room: Room;
@@ -15,10 +15,7 @@ class RoomClient {
   private _game: GameClient | null;
 
   constructor(event: NewRoomEvent){
-    this._state = RoomState.IDLE;
-
     this._room = Room.fromNewRoomEvent(event);
-
     this._game = null;
   }
 
@@ -42,6 +39,10 @@ class RoomClient {
       case RoomEventType.GAME_EVENT:
         this._room = this._room.handleEvent(e);
         this._game.acceptEvent(e.event);
+        break;
+      case RoomEventType.ROOM_CLOSED:
+        this._room = this._room.handleEvent(e);
+        //no-op because client have nothing to close
         break;
     }
   }

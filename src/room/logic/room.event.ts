@@ -4,6 +4,7 @@ import { GameConfig } from '../../game/logic/game';
 
 export enum RoomEventType {
     NEW_ROOM,
+    ROOM_CLOSED,
     CHANGE_SETTINGS,
 
     PLAYER_JOIN,
@@ -35,7 +36,8 @@ export interface NewRoomEvent extends RoomEvent {
 
 
 export type NormalRoomEvent =
-  ChangeSettingsEvent
+  RoomClosedEvent
+  | ChangeSettingsEvent
   | PlayerJoinEvent
   | PlayerLeftEvent
   | PlayerReadyEvent
@@ -51,6 +53,14 @@ export interface ChangeSettingsEvent extends RoomEvent {
     readonly type: RoomEventType.CHANGE_SETTINGS;
 
     readonly gameConfig: GameConfig;
+
+}
+
+export interface RoomClosedEvent extends RoomEvent {
+
+  readonly type: RoomEventType.ROOM_CLOSED;
+
+  readonly reason: 'game_finished' | 'server_terminated';
 
 }
 

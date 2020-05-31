@@ -16,12 +16,11 @@ export class RoomServer {
   }
 
 
-  public get state(): RoomState { return this._state; }
-  private _state: RoomState;
+  public get state(): RoomState { return this.room.state; }
 
   public readonly events: EventEmitter<RoomEvent>;
 
-  public readonly clientEvent: EventEmitter<RoomEvent>;
+  public readonly clientEvents: EventEmitter<RoomEvent>;
 
   public get room(): Room { return this._room; }
   private _room: Room;
@@ -31,9 +30,8 @@ export class RoomServer {
 
 
   constructor(event: NewRoomEvent){
-    this._state = RoomState.IDLE;
-
     this.events = new EventEmitter();
+    this.clientEvents = new EventEmitter();
     this._room = Room.fromNewRoomEvent(event);
 
     this._game = null;
@@ -43,10 +41,17 @@ export class RoomServer {
 
   acceptEvent(e: NormalRoomEvent): void {
     this._room = this._room.handleEvent(e);
+    if(e.type === RoomEventType.GAME_EVENT) {
+      this._game.acceptEvent(e.event);
+    }
   }
 
-  private emitEvent(e: NormalRoomEvent): void {
+  private acceptAndSendEvent(e: NormalRoomEvent): void {
     this.acceptEvent(e);
+    this.sendEvent(e);
+  }
+
+  private sendEvent(e: NormalRoomEvent): void {
     this.events.emit(e);
     this.emitClientEvent(e);
   }
@@ -62,6 +67,7 @@ export class RoomServer {
       case RoomEventType.PLAYER_RENAME:
       case RoomEventType.GAME_EVENT:
       case RoomEventType.GAME_FINISHED:
+      case RoomEventType.ROOM_CLOSED:
         result = e;
         break;
       case RoomEventType.GAME_STARTED:
@@ -71,7 +77,19 @@ export class RoomServer {
         };
         break;
     }
-    this.clientEvent.emit(result);
+    this.clientEvents.emit(result);
+  }
+
+  // lifecycle
+
+  close(): void {
+    if(this._game!==null) {
+      this._game.stop();
+    }
+    this.acceptAndSendEvent({
+      type: RoomEventType.ROOM_CLOSED,
+      reason: 'server_terminated'
+    });
   }
 
   // operations for handling request
@@ -86,8 +104,12 @@ export class RoomServer {
           this._game.handleRequest((req as GameRequest).request);
           //TODO: move this to game logic
           if(this._game.game.winner !== undefined) {
-            this.emitEvent({
+            this.acceptAndSendEvent({
               type: RoomEventType.GAME_FINISHED
+            });
+            this.acceptAndSendEvent({
+              type: RoomEventType.ROOM_CLOSED,
+              reason: 'game_finished'
             });
           }
         }
@@ -106,6 +128,9 @@ export class RoomServer {
     const ret = this._room.handleRequest(req);
     if(ret instanceof Error) {
       throw ret;
+    } else if (ret === null) {
+      //no-op
+      return;
     } else {
       //side-effects
       switch (ret.type) {
@@ -116,6 +141,9 @@ export class RoomServer {
           break;
         case RoomEventType.GAME_EVENT:
           this._game.acceptEvent(ret.event);
+          break;
+        case RoomEventType.ROOM_CLOSED:
+          //not possible for server
           break;
         case RoomEventType.GAME_FINISHED:
         case RoomEventType.CHANGE_SETTINGS:
@@ -128,11 +156,11 @@ export class RoomServer {
           break;
       }
     }
-    this.emitEvent(ret);
+    this.acceptAndSendEvent(ret);
   }
 
   private onGameEvent(event: NormalEvent): void {
-    this.emitEvent({
+    this.sendEvent({
       type: RoomEventType.GAME_EVENT,
       event: event
     });
