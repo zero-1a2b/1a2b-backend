@@ -1,5 +1,6 @@
 import { Player } from './player';
 
+
 export enum ServerGameRequestType {
   GUESS,
   TIMEOUT

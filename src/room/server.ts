@@ -1,17 +1,18 @@
-import { ServerGame } from '../game/logic/server-game';
 import { EventEmitter } from '../util/EventEmitter';
 import { Room, RoomState } from './logic/room';
-import { NewRoomEvent, NormalRoomEvent, RoomEvent, RoomEventType } from './logic/room.event';
-import { RoomRequest } from './logic/room.request';
+import { GameStartedEvent, NewRoomEvent, NormalRoomEvent, RoomEvent, RoomEventType } from './logic/room.event';
+import { GameRequest, RoomRequest, RoomRequestType } from './logic/room.request';
+import { mapToClient, NewServerGameEvent, NormalEvent } from '../game/logic/game.event';
+import { GameServer } from '../game/server';
 
 
 export class RoomServer {
 
-  static newRoom(): RoomServer {
-    const e: NewRoomEvent = {
-      type: RoomEventType.NEW_ROOM
-    }
-    return new RoomServer(e);
+  static newRoom(id: string): RoomServer {
+    return new RoomServer({
+      type: RoomEventType.NEW_ROOM,
+      id: id
+    });
   }
 
 
@@ -20,11 +21,14 @@ export class RoomServer {
 
   public readonly events: EventEmitter<RoomEvent>;
 
+  public readonly clientEvent: EventEmitter<RoomEvent>;
+
   public get room(): Room { return this._room; }
   private _room: Room;
 
-  public get game(): ServerGame { return this._game; }
-  private _game: ServerGame | null;
+  public get game(): GameServer { return this._game; }
+  private _game: GameServer | null;
+
 
   constructor(event: NewRoomEvent){
     this._state = RoomState.IDLE;
@@ -44,16 +48,94 @@ export class RoomServer {
   private emitEvent(e: NormalRoomEvent): void {
     this.acceptEvent(e);
     this.events.emit(e);
+    this.emitClientEvent(e);
+  }
+
+  private emitClientEvent(e: NormalRoomEvent): void {
+    let result: NormalRoomEvent;
+    switch (e.type) {
+      case RoomEventType.CHANGE_SETTINGS:
+      case RoomEventType.PLAYER_JOIN:
+      case RoomEventType.PLAYER_LEFT:
+      case RoomEventType.PLAYER_READY:
+      case RoomEventType.PLAYER_UNREADY:
+      case RoomEventType.PLAYER_RENAME:
+      case RoomEventType.GAME_EVENT:
+      case RoomEventType.GAME_FINISHED:
+        result = e;
+        break;
+      case RoomEventType.GAME_STARTED:
+        result = {
+          type: RoomEventType.GAME_STARTED,
+          event: mapToClient((e as GameStartedEvent).event as NewServerGameEvent)
+        };
+        break;
+    }
+    this.clientEvent.emit(result);
   }
 
   // operations for handling request
 
   handleRequest(req: RoomRequest): void {
+    //special handling
+    switch (req.type) {
+      case RoomRequestType.GAME:
+        if(this._game === null) {
+          throw new Error("error.game_not_started");
+        } else {
+          this._game.handleRequest((req as GameRequest).request);
+          //TODO: move this to game logic
+          if(this._game.game.winner !== undefined) {
+            this.emitEvent({
+              type: RoomEventType.GAME_FINISHED
+            });
+          }
+        }
+        break;
+      case RoomRequestType.CONNECT:
+      case RoomRequestType.DISCONNECT:
+      case RoomRequestType.READY:
+      case RoomRequestType.UNREADY:
+      case RoomRequestType.START:
+        //let internal state deal with it
+        return this.internalStateHandleRequest(req);
+    }
+  }
+
+  private internalStateHandleRequest(req: RoomRequest): void {
     const ret = this._room.handleRequest(req);
     if(ret instanceof Error) {
       throw ret;
+    } else {
+      //side-effects
+      switch (ret.type) {
+        case RoomEventType.GAME_STARTED:
+          this._game = new GameServer(ret.event as NewServerGameEvent);
+          this._game.events.subscribe(v=>this.onGameEvent(v));
+          this._game.start();
+          break;
+        case RoomEventType.GAME_EVENT:
+          this._game.acceptEvent(ret.event);
+          break;
+        case RoomEventType.GAME_FINISHED:
+        case RoomEventType.CHANGE_SETTINGS:
+        case RoomEventType.PLAYER_JOIN:
+        case RoomEventType.PLAYER_LEFT:
+        case RoomEventType.PLAYER_READY:
+        case RoomEventType.PLAYER_UNREADY:
+        case RoomEventType.PLAYER_RENAME:
+          //have no side-effect, ignore
+          break;
+      }
     }
     this.emitEvent(ret);
+  }
+
+  private onGameEvent(event: NormalEvent): void {
+    this.emitEvent({
+      type: RoomEventType.GAME_EVENT,
+      event: event
+    });
   }
 
 }

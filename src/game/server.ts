@@ -1,8 +1,9 @@
-import { GameConfig, GameEvent, NewServerGameEvent, NormalEvent } from './logic/game.event';
+import { GameEvent, NewServerGameEvent, NormalEvent } from './logic/game.event';
 import { Player } from './logic/player';
 import { EventEmitter } from '../util/EventEmitter';
 import { newServerGameEvent, ServerGame } from './logic/server-game';
 import { ServerGameRequest, ServerGameRequestType } from './logic/server-game.request';
+import { GameConfig } from './logic/game';
 
 
 export enum GameState {

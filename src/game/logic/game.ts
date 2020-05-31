@@ -1,14 +1,18 @@
 import { Player } from './player';
 import {
-  GameConfig,
   GameEventType,
-  GuessEvent,
-  NewClientGameEvent,
   NewGameEvent,
-  NewServerGameEvent,
   NormalEvent,
 } from './game.event';
 
+
+export interface GameConfig {
+
+  readonly playerTimeoutMillis: number
+
+  readonly answerLength: number;
+
+}
 
 export class Game {
 
@@ -17,10 +21,9 @@ export class Game {
         playerTimeoutMillis: 60*1000
     };
 
-    static fromNewGameEvent(event: NewGameEvent): Game {
-        switch (event.type) {
+    static fromNewGameEvent(e: NewGameEvent): Game {
+        switch (e.type) {
             case GameEventType.NEW_GAME_CLIENT: {
-                const e = event as NewClientGameEvent;
                 return new Game(
                     e.players,
                     undefined,
@@ -29,7 +32,6 @@ export class Game {
                 );
             }
             case GameEventType.NEW_GAME_SERVER: {
-                const e = event as NewServerGameEvent;
                 return new Game(
                     e.players,
                     undefined,
@@ -54,8 +56,8 @@ export class Game {
     }
 
 
-    handleEvent(event: NormalEvent): Game {
-        switch (event.type) {
+    handleEvent(e: NormalEvent): Game {
+        switch (e.type) {
             case GameEventType.TIMEOUT: {
                 return new Game(
                     this.players,
@@ -65,7 +67,6 @@ export class Game {
                 )
             }
             case GameEventType.GUESS: {
-                const e = event as GuessEvent;
                 return new Game(
                     this.players,
                     e.a === this.config.answerLength ? e.player : undefined,

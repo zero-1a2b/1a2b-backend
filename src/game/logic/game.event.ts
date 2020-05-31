@@ -1,4 +1,5 @@
 import { Player } from './player';
+import { GameConfig } from './game';
 
 
 export enum GameEventType {
@@ -8,24 +9,22 @@ export enum GameEventType {
     GUESS
 }
 
-
 export interface GameEvent {
 
     readonly type: GameEventType;
 
 }
 
-export interface GameConfig {
 
-    readonly playerTimeoutMillis: number
+export type NewGameEvent = NewClientGameEvent | NewServerGameEvent;
 
-    readonly answerLength: number;
-
+export function isNewGameEvent(e: GameEvent): e is NewGameEvent {
+    return e.type === GameEventType.NEW_GAME_CLIENT || e.type === GameEventType.NEW_GAME_SERVER;
 }
 
-export interface NewGameEvent extends GameEvent {
+export interface NewClientGameEvent extends GameEvent {
 
-    readonly type: GameEventType.NEW_GAME_CLIENT | GameEventType.NEW_GAME_SERVER;
+    readonly type: GameEventType.NEW_GAME_CLIENT;
 
     readonly players: Player[];
 
@@ -33,42 +32,40 @@ export interface NewGameEvent extends GameEvent {
 
 }
 
-export function isNewGameEvent(e: GameEvent): e is NewGameEvent {
-    return e.type === GameEventType.NEW_GAME_CLIENT || e.type === GameEventType.NEW_GAME_SERVER;
-}
-
-export interface NewClientGameEvent extends NewGameEvent {
-
-    readonly type: GameEventType.NEW_GAME_CLIENT;
-
-}
-
-export interface NewServerGameEvent extends NewGameEvent {
+export interface NewServerGameEvent extends GameEvent {
 
     readonly type: GameEventType.NEW_GAME_SERVER;
+
+    readonly players: Player[];
+
+    readonly config: GameConfig;
 
     readonly answer: number[];
 
 }
 
-
-export interface NormalEvent extends GameEvent {
-
-    readonly type: GameEventType.GUESS | GameEventType.TIMEOUT;
-
+export function mapToClient(server: NewServerGameEvent): NewClientGameEvent {
+  return {
+    type: GameEventType.NEW_GAME_CLIENT,
+    config: server.config,
+    players: server.players
+  }
 }
+
+
+export type NormalEvent = TimeoutEvent | GuessEvent;
 
 export function isNormalEvent(e: GameEvent): e is NormalEvent {
-    return !isNewGameEvent(e);
+  return e.type === GameEventType.GUESS || e.type === GameEventType.TIMEOUT;
 }
 
-export interface TimeoutEvent extends NormalEvent {
+export interface TimeoutEvent extends GameEvent {
 
     readonly type: GameEventType.TIMEOUT;
 
 }
 
-export interface GuessEvent extends NormalEvent {
+export interface GuessEvent extends GameEvent {
 
     readonly type: GameEventType.GUESS;
 

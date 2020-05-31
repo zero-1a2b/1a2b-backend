@@ -12,8 +12,7 @@ import {
   RoomEventType,
   RoomGameEvent,
 } from './room.event';
-import { GameConfig } from '../../game/logic/game.event';
-import { Game } from '../../game/logic/game';
+import { Game, GameConfig } from '../../game/logic/game';
 import { filter, map } from 'lodash';
 import {
   GameStartRequest,
@@ -152,23 +151,23 @@ export class Room {
   handleEvent(event: NormalRoomEvent): Room {
     switch (event.type) {
       case RoomEventType.CHANGE_SETTINGS:
-          return this.handleChangeSettingsEvent(event as ChangeSettingsEvent);
+          return this.handleChangeSettingsEvent(event);
       case RoomEventType.PLAYER_JOIN:
-          return this.handlePlayerJoinEvent(event as PlayerJoinEvent);
+          return this.handlePlayerJoinEvent(event);
       case RoomEventType.PLAYER_LEFT:
-          return this.handlePlayerLeftEvent(event as PlayerLeftEvent);
+          return this.handlePlayerLeftEvent(event);
       case RoomEventType.PLAYER_RENAME:
-          return this.handlePlayerRenameEvent(event as PlayerRenameEvent);
+          return this.handlePlayerRenameEvent(event);
       case RoomEventType.PLAYER_READY:
-          return this.handlePlayerReadyEvent(event as PlayerReadyEvent);
+          return this.handlePlayerReadyEvent(event);
       case RoomEventType.PLAYER_UNREADY:
-          return this.handlePlayerUnreadyEvent(event as PlayerUnreadyEvent);
+          return this.handlePlayerUnreadyEvent(event);
       case RoomEventType.GAME_STARTED:
-          return this.handleGameStartedEvent(event as GameStartedEvent);
+          return this.handleGameStartedEvent(event);
       case RoomEventType.GAME_EVENT:
-          return this.handleGameEvent(event as RoomGameEvent);
+          return this.handleGameEvent(event);
       case RoomEventType.GAME_FINISHED:
-          return this.handleGameFinishedEvent(event as GameFinishedEvent);
+          return this.handleGameFinishedEvent(event);
     }
   }
 

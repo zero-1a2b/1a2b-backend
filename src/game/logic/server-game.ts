@@ -1,6 +1,6 @@
-import { GameConfig, GameEventType, GuessEvent, NewServerGameEvent, NormalEvent, TimeoutEvent } from './game.event';
+import { GameEventType, GuessEvent, NewServerGameEvent, NormalEvent, TimeoutEvent } from './game.event';
 import { shuffle, take, zip } from 'lodash';
-import { Game } from './game';
+import { Game, GameConfig } from './game';
 import { GuessRequest, ServerGameRequest, ServerGameRequestType, TimeoutRequest } from './server-game.request';
 import { Player } from './player';
 
@@ -53,6 +53,7 @@ export function newServerGameEvent(
     config: config,
   };
 }
+
 
 export class ServerGame extends Game {
 
