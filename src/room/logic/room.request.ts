@@ -2,12 +2,12 @@ import { ServerGameRequest } from '../../game/logic/server-game.request';
 
 
 export enum RoomRequestType {
-  CONNECT,
-  DISCONNECT,
-  READY,
-  UNREADY,
-  START,
-  GAME
+  CONNECT = "connect",
+  DISCONNECT = "disconnect",
+  READY = "ready",
+  UNREADY = "unready",
+  START = "start",
+  GAME = "game"
 }
 
 export interface RoomRequest {

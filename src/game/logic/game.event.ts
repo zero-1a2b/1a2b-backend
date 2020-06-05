@@ -3,10 +3,10 @@ import { GameConfig } from './game';
 
 
 export enum GameEventType {
-    NEW_GAME_CLIENT,
-    NEW_GAME_SERVER,
-    TIMEOUT,
-    GUESS
+    NEW_GAME_CLIENT = "new_game_client",
+    NEW_GAME_SERVER = "new_game_server",
+    TIMEOUT = "timeout",
+    GUESS = "guess"
 }
 
 export interface GameEvent {

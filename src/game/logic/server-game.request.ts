@@ -2,8 +2,8 @@ import { Player } from './player';
 
 
 export enum ServerGameRequestType {
-  GUESS,
-  TIMEOUT
+  GUESS = "guess",
+  TIMEOUT = "timeout"
 }
 
 export interface ServerGameRequest {

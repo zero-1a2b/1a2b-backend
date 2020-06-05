@@ -3,20 +3,20 @@ import { GameConfig } from '../../game/logic/game';
 
 
 export enum RoomEventType {
-    NEW_ROOM,
-    ROOM_CLOSED,
-    CHANGE_SETTINGS,
+    NEW_ROOM= "new_room",
+    ROOM_CLOSED = "room_closed",
+    CHANGE_SETTINGS = "change_settings",
 
-    PLAYER_JOIN,
-    PLAYER_LEFT,
-    PLAYER_RENAME,
+    PLAYER_JOIN = "join",
+    PLAYER_LEFT = "left",
+    PLAYER_RENAME = "rename",
 
-    PLAYER_READY,
-    PLAYER_UNREADY,
+    PLAYER_READY = "ready",
+    PLAYER_UNREADY = "unready",
 
-    GAME_STARTED,
-    GAME_EVENT,
-    GAME_FINISHED
+    GAME_STARTED = "game_started",
+    GAME_EVENT = "game",
+    GAME_FINISHED = "game_finished"
 }
 
 export interface RoomEvent {
