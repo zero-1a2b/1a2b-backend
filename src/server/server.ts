@@ -65,8 +65,8 @@ export class RootServer {
       if(this.masterConnection !== null) {
         this.masterConnection.close();
       }
-      this.playerConnections.forEach(v=>v.close(2000, 'status.room_closing'));
-      this.observerConnections.forEach(v=>v.close(2000, 'status.room_closing'));
+      this.playerConnections.forEach(v=>v.close(2020, 'status.room_closing'));
+      this.observerConnections.forEach(v=>v.close(2020, 'status.room_closing'));
     }
 
 
