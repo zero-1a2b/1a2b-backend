@@ -6,6 +6,7 @@ import { RoomEventType } from '../room/logic/room.event';
 import KoaWebsocket, * as websockify from 'koa-websocket';
 import { Server } from 'http';
 
+
 export class RootServers {
 
     private gcTimer: any | null;
@@ -15,6 +16,8 @@ export class RootServers {
     private server: Server;
 
     private rooms: Map<string, RootServer>
+
+    private cors = require('@koa/cors');
 
 
     constructor() {
@@ -38,6 +41,7 @@ export class RootServers {
 
     private startServer(): void {
         this.koa = websockify(new Koa());
+        this.koa.use(this.cors());
         console.log("starting server listening on 8085");
         this.server = this.koa.listen(8085);
         this.registerRoutes(this.koa);
