@@ -19,13 +19,7 @@ export class RootServer {
 
     private room: RoomServer | null;
 
-    private masterHistory: RoomEvent[];
-
-    private playerHistory: RoomEvent[];
-
-    public masterKey: string;
-
-    private masterConnection: ws | null;
+    private history: RoomEvent[];
 
     private playerConnections: Set<ws>;
 
@@ -33,27 +27,21 @@ export class RootServer {
 
 
     constructor(
-        event: NewRoomEvent,
-        masterKey: string
+        event: NewRoomEvent
     ) {
         this.room = new RoomServer(event);
         //connections
-        this.masterKey = masterKey;
-        this.masterConnection = null;
         this.playerConnections = new Set();
         this.observerConnections = new Set();
         //events
-        this.masterHistory = [];
-        this.playerHistory = [];
+        this.history = [];
         this.room.events.subscribe(e=>e.type===RoomEventType.ROOM_CLOSED?(this.onClose()):null);
-        this.room.events.subscribe(e=>this.saveAndDeliverMasterEvent(e));
         this.room.clientEvents.subscribe(e=>this.saveAndDeliverPlayerEvent(e));
         //save the initial event
-        this.saveAndDeliverMasterEvent(event);
         this.saveAndDeliverPlayerEvent(event);
     }
 
-    isDone(): boolean {
+    isClosed(): boolean {
         return this.room === null;
     }
 
@@ -63,31 +51,10 @@ export class RootServer {
 
     private onClose(): void {
       this.room = null;
-      if(this.masterConnection !== null) {
-        this.masterConnection.close();
-      }
       this.playerConnections.forEach(v=>v.close(2020, 'status.room_closing'));
       this.observerConnections.forEach(v=>v.close(2020, 'status.room_closing'));
     }
 
-
-    onNewMasterConnection(ctx: Koa.Context): void {
-        console.debug('internal/new master connected');
-        if(this.masterConnection !== null) {
-            //if not null, we ping and reject this request
-            this.masterConnection.ping('1a2b-master-alive-ping', true, closeOnErrorDefined('master-ping', this.masterConnection));
-            ctx.websocket.close(5000, 'error.already_connected');
-        } else {
-            //validate key correctness
-            const key = ctx.query.key;
-            if(key !== this.masterKey) {
-                ctx.websocket.close(4030, 'error.incorrect_key');
-            } else {
-                //accept the connection
-                this.acceptMasterConnection(ctx.websocket);
-            }
-        }
-    }
 
     onNewPlayerConnection(ctx: Koa.Context): void {
         const conn: PlayerConnectRequest = {
@@ -104,32 +71,7 @@ export class RootServer {
     }
 
     onNewObserverConnection(ctx: Koa.Context): void {
-        //accept the connection
         this.acceptObserverConnection(ctx.websocket);
-    }
-
-
-    private acceptMasterConnection(conn: ws): void {
-        conn.addEventListener('message', (event)=>{
-            try {
-                this.room.handleRequest(JSON.parse(event.data), INTERNAL_SENDER);
-                conn.send(JSON.stringify({'code':'success'}));
-            } catch(e) {
-                const err: Error = e;
-                console.log('error handling master request', e);
-                conn.send(JSON.stringify({'code':'error', 'message': err.message}));
-            }
-        });
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        conn.addEventListener('close', (_event)=>{
-            this.masterConnection = null;
-        });
-        conn.addEventListener('error', (err)=>{
-            console.error('error in master conn', err);
-            this.masterConnection = null;
-        });
-        this.masterHistory.forEach(e=>conn.send(JSON.stringify(e), closeOnErrorDefined('master-replay', conn)));
-        this.masterConnection = conn;
     }
 
     private acceptPlayerConnection(conn: ws, name: string): void {
@@ -161,7 +103,7 @@ export class RootServer {
             this.playerConnections.delete(conn);
             this.room.handleRequest(left, INTERNAL_SENDER);
         });
-        this.playerHistory.forEach(e=>conn.send(JSON.stringify(e), closeOnErrorDefined('player-replay', conn)));
+        this.history.forEach(e=>conn.send(JSON.stringify(e), closeOnErrorDefined('player-replay', conn)));
         this.playerConnections.add(conn);
     }
 
@@ -174,20 +116,12 @@ export class RootServer {
             console.error('error in observer conn', event);
             this.observerConnections.delete(conn);
         });
-        this.playerHistory.forEach(e=>conn.send(JSON.stringify(e), closeOnErrorDefined('observer-replay', conn)));
+        this.history.forEach(e=>conn.send(JSON.stringify(e), closeOnErrorDefined('observer-replay', conn)));
         this.observerConnections.add(conn);
     }
 
-
-    private saveAndDeliverMasterEvent(e: RoomEvent): void {
-        this.masterHistory.push(e);
-        if(this.masterConnection !== null) {
-            this.masterConnection.send(JSON.stringify(e), closeOnErrorDefined('master-send', this.masterConnection));
-        }
-    }
-
     private saveAndDeliverPlayerEvent(e: RoomEvent): void {
-        this.playerHistory.push(e);
+        this.history.push(e);
         this.playerConnections.forEach(ob => {
             ob.send(JSON.stringify(e), closeOnErrorDefined('player-send', ob));
         });

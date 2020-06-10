@@ -56,7 +56,6 @@ export class RootServers {
 
     private registerRoutes(app: KoaWebsocket.App): void {
         app.use(route.put('/rooms', ctx=> { this.handleNewRoom(ctx); }));
-        app.ws.use(route.all('/rooms/:id/master', (ctx, id)=> { this.newMasterConnection(ctx, id); }));
         app.ws.use(route.all('/rooms/:id/player', (ctx, id)=> { this.newPlayerConnection(ctx, id); }));
         app.ws.use(route.all('/rooms/:id/observe', (ctx, id)=> { this.newObserverConnection(ctx, id); }));
     }
@@ -69,19 +68,6 @@ export class RootServers {
             'id': id,
             'key': key
         };
-    }
-
-    private newMasterConnection(ctx: Koa.Context, id: string): void {
-        console.debug(`conn: ${ctx.websocket.readyState}`);
-        if(!this.rooms.has(id)) {
-            console.debug(`foo`);
-            ctx.websocket.close(4040, "error.room_not_exists");
-            console.debug(`tar`);
-        } else {
-            console.debug(`bar`);
-            this.rooms.get(id).onNewMasterConnection(ctx);
-        }
-        console.debug(`conn: ${ctx.websocket.readyState}`)
     }
 
     private newPlayerConnection(ctx: Koa.Context, id: string): void {
@@ -116,8 +102,7 @@ export class RootServers {
             {
                 type: RoomEventType.NEW_ROOM,
                 id: id.toString()
-            },
-            key.toString()
+            }
         );
         this.rooms.set(id.toString(), server);
 
@@ -147,7 +132,7 @@ export class RootServers {
     private gc(): void {
         const toGC = [];
         this.rooms.forEach((v,k)=>{
-            if(v.isDone()) {
+            if(v.isClosed()) {
                 toGC.push(k);
             }
         });
