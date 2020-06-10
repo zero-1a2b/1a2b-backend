@@ -1,14 +1,19 @@
-import { RoomServer } from '../../src/room/server';
+import { RoomServer} from '../../src/room/server';
 import { GameEventType } from '../../src/game/logic/game.event';
 import {
   GameRequest,
   GameStartRequest,
-  PlayerConnectRequest, PlayerDisconnectRequest,
-  PlayerReadyRequest, PlayerUnreadyRequest, RoomRequest,
+  PlayerConnectRequest,
+  PlayerDisconnectRequest,
+  PlayerReadyRequest,
+  PlayerUnreadyRequest,
+  RoomRequest,
   RoomRequestType,
 } from '../../src/room/logic/room.request';
 import {
-  GameStartedEvent, NormalRoomEvent, PlayerJoinEvent,
+  GameStartedEvent,
+  NormalRoomEvent,
+  PlayerJoinEvent,
   PlayerReadyEvent,
   RoomClosedEvent,
   RoomEventType,
@@ -16,6 +21,18 @@ import {
 } from '../../src/room/logic/room.event';
 import { GuessRequest, ServerGameRequestType, TimeoutRequest } from '../../src/game/logic/server-game.request';
 import { Game } from '../../src/game/logic/game';
+import { INTERNAL_SENDER, PlayerSender, RequestSender, SenderType } from '../../src/util/sender';
+
+
+const testSender: PlayerSender = {
+  type: SenderType.PLAYER,
+  player: 'test'
+};
+
+const test2Sender: PlayerSender = {
+  type: SenderType.PLAYER,
+  player: 'test2'
+};
 
 
 const connectRequest: PlayerConnectRequest = {
@@ -79,9 +96,9 @@ describe('RoomServer lifecycle works', () => {
     const server = RoomServer.newRoom("123");
     server.clientEvents.subscribe(v=>v.type === RoomEventType.ROOM_CLOSED ? recvClient = v : null);
 
-    server.handleRequest(connectRequest);
-    server.handleRequest(readyRequest);
-    server.handleRequest(startRequest);
+    server.handleRequest(connectRequest, INTERNAL_SENDER);
+    server.handleRequest(readyRequest, testSender);
+    server.handleRequest(startRequest, testSender);
     server.close();
 
     expect(recvClient.type).toBe(RoomEventType.ROOM_CLOSED);
@@ -98,8 +115,8 @@ describe('RoomServer eventing works', () => {
     server.events.subscribe(()=>recvServer=true);
     server.clientEvents.subscribe(()=>recvClient=true);
 
-    server.handleRequest(connectRequest);
-    server.handleRequest(readyRequest);
+    server.handleRequest(connectRequest, INTERNAL_SENDER);
+    server.handleRequest(readyRequest, testSender);
 
     expect(recvClient).toBe(true);
     expect(recvServer).toBe(true);
@@ -112,9 +129,9 @@ describe('RoomServer eventing works', () => {
     const server = RoomServer.newRoom("123");
     server.clientEvents.subscribe(v=>v.type === RoomEventType.GAME_STARTED ? recvClient = v : null);
 
-    server.handleRequest(connectRequest);
-    server.handleRequest(readyRequest);
-    server.handleRequest(startRequest);
+    server.handleRequest(connectRequest, INTERNAL_SENDER);
+    server.handleRequest(readyRequest, testSender);
+    server.handleRequest(startRequest, testSender);
 
     expect(recvClient.event.type).toBe(GameEventType.NEW_GAME_CLIENT);
 
@@ -126,9 +143,9 @@ describe('RoomServer eventing works', () => {
     const server = RoomServer.newRoom("123");
     server.clientEvents.subscribe(v=>v.type === RoomEventType.GAME_EVENT ? recvClient = v : null);
 
-    server.handleRequest(connectRequest);
-    server.handleRequest(readyRequest);
-    server.handleRequest(startRequest);
+    server.handleRequest(connectRequest, INTERNAL_SENDER);
+    server.handleRequest(readyRequest, testSender);
+    server.handleRequest(startRequest, testSender);
     const r: GuessRequest = {
       type: ServerGameRequestType.GUESS,
       player: 'test',
@@ -138,7 +155,7 @@ describe('RoomServer eventing works', () => {
       type: RoomRequestType.GAME,
       request: r
     };
-    server.handleRequest(req);
+    server.handleRequest(req, testSender);
 
     expect(recvClient.event.type).toBe(GameEventType.GUESS);
 
@@ -148,9 +165,9 @@ describe('RoomServer eventing works', () => {
   it('accept works', () => {
     const server = RoomServer.newRoom("123");
 
-    server.handleRequest(connectRequest);
-    server.handleRequest(readyRequest);
-    server.handleRequest(connect2Request);
+    server.handleRequest(connectRequest, INTERNAL_SENDER);
+    server.handleRequest(readyRequest, testSender);
+    server.handleRequest(connect2Request, INTERNAL_SENDER);
 
     server.acceptEvent({
       type: RoomEventType.PLAYER_READY,
@@ -165,11 +182,11 @@ describe('RoomServer eventing works', () => {
   it('accept forwards to game', () => {
     const server = RoomServer.newRoom("123");
 
-    server.handleRequest(connectRequest);
-    server.handleRequest(readyRequest);
-    server.handleRequest(connect2Request);
-    server.handleRequest(ready2Request);
-    server.handleRequest(startRequest);
+    server.handleRequest(connectRequest, INTERNAL_SENDER);
+    server.handleRequest(readyRequest, testSender);
+    server.handleRequest(connect2Request, INTERNAL_SENDER);
+    server.handleRequest(ready2Request, test2Sender);
+    server.handleRequest(startRequest, testSender);
 
     const r: TimeoutRequest = {
       type: ServerGameRequestType.TIMEOUT
@@ -178,7 +195,7 @@ describe('RoomServer eventing works', () => {
       type: RoomRequestType.GAME,
       request: r
     };
-    server.handleRequest(req);
+    server.handleRequest(req, testSender);
 
     expect(server.game.game.guesser).toEqual(1);
 
@@ -219,6 +236,8 @@ interface TestRequestTemplate<Request extends RoomRequest> {
 
   request: Request;
 
+  sender?: RequestSender;
+
   assertions: (testOp) => void;
 
 }
@@ -230,7 +249,7 @@ function testRequest<Request extends RoomRequest>(template: TestRequestTemplate<
   template.assertions(()=>{
     const events = [];
     const sub = room.events.subscribe(v=>events.push(v));
-    room.handleRequest(template.request);
+    room.handleRequest(template.request, template.sender === undefined? testSender : template.sender);
     sub.unsubscribe();
     return {
       room: room,
@@ -251,6 +270,7 @@ describe('Room handles PlayerConnect Correctly', () => {
         type: RoomRequestType.CONNECT,
         player: 'a'
       },
+      sender: INTERNAL_SENDER,
       assertions: (run) => {
         const { room, events } = run();
         expect(room.room.playerIDs).toEqual(['a']);
@@ -273,6 +293,7 @@ describe('Room handles PlayerConnect Correctly', () => {
         type: RoomRequestType.CONNECT,
         player: joinEvent.name
       },
+      sender: INTERNAL_SENDER,
       assertions: (run) => {
         expect(run).toThrow();
       }
@@ -290,6 +311,7 @@ describe('Room handles PlayerConnect Correctly', () => {
         type: RoomRequestType.CONNECT,
         player: joinEvent.name
       },
+      sender: INTERNAL_SENDER,
       assertions: (run) => {
         expect(run).not.toThrow();
       }
@@ -307,6 +329,7 @@ describe('Room handles PlayerConnect Correctly', () => {
         type: RoomRequestType.CONNECT,
         player: 'a'
       },
+      sender: INTERNAL_SENDER,
       assertions: (run) => {
         expect(run).toThrow();
       }
@@ -326,6 +349,7 @@ describe('Room handles PlayerDisconnect Correctly', () => {
         type: RoomRequestType.DISCONNECT,
         player: joinEvent.name
       },
+      sender: INTERNAL_SENDER,
       assertions: (run) => {
         const { room, events } = run();
         expect(room.room.playerIDs).toEqual([]);
@@ -350,6 +374,7 @@ describe('Room handles PlayerDisconnect Correctly', () => {
         type: RoomRequestType.DISCONNECT,
         player: joinEvent.name
       },
+      sender: INTERNAL_SENDER,
       assertions: (run) => {
         const { room, events } = run();
         expect(room.room.playerIDs).toEqual([]);
@@ -592,16 +617,16 @@ describe('simulated play through', () => {
   it('complex case', () => {
     const server = RoomServer.newRoom("123");
 
-    server.handleRequest(connect('test'));
-    server.handleRequest(ready('test'));
-    server.handleRequest(unready('test'));
-    server.handleRequest(ready('test'));
+    server.handleRequest(connect('test'), INTERNAL_SENDER);
+    server.handleRequest(ready('test'), testSender);
+    server.handleRequest(unready('test'), testSender);
+    server.handleRequest(ready('test'), testSender);
 
-    server.handleRequest(connect('test2'));
-    server.handleRequest(disconnect('test2'));
-    server.handleRequest(connect('test2'));
+    server.handleRequest(connect('test2'), INTERNAL_SENDER);
+    server.handleRequest(disconnect('test2'), INTERNAL_SENDER);
+    server.handleRequest(connect('test2'), INTERNAL_SENDER);
 
-    server.handleRequest(gameStart());
+    server.handleRequest(gameStart(), testSender);
 
     const playerA = server.game.game.players[0];
     const playerB = server.game.game.players[1];
@@ -610,14 +635,22 @@ describe('simulated play through', () => {
       guess(
         playerA,
         [...server.game.game.answer].map((v,idx)=>idx===3?-v:v)
-      )
+      ),
+      {
+        type: SenderType.PLAYER,
+        player: playerA
+      }
     );
 
     server.handleRequest(
       guess(
         playerB,
         [...server.game.game.answer]
-      )
+      ),
+      {
+        type: SenderType.PLAYER,
+        player: playerB
+      }
     );
 
     expect(server.game.game.winner).toEqual(playerB);

@@ -1,9 +1,10 @@
-import { RoomServer } from "../room/server";
-import { RoomEvent, NewRoomEvent, RoomEventType } from '../room/logic/room.event';
-import * as Koa from "koa";
+import { RoomServer} from '../room/server';
+import { NewRoomEvent, RoomEvent, RoomEventType } from '../room/logic/room.event';
+import * as Koa from 'koa';
 import * as ws from 'ws';
-import { PlayerConnectRequest, RoomRequestType, PlayerDisconnectRequest } from '../room/logic/room.request';
+import { PlayerConnectRequest, PlayerDisconnectRequest, RoomRequestType } from '../room/logic/room.request';
 import { RoomState } from '../room/logic/room';
+import { INTERNAL_SENDER, SenderType } from '../util/sender';
 
 function closeOnErrorDefined(action: string, conn: ws): (e?: Error) => void {
     return function(err?: Error): void {
@@ -94,7 +95,7 @@ export class RootServer {
             player: ctx.query.name
         };
         try {
-            this.room.handleRequest(conn);
+            this.room.handleRequest(conn, INTERNAL_SENDER);
             this.acceptPlayerConnection(ctx.websocket, ctx.query.name);
         } catch (e) {
             const err: Error = e;
@@ -111,7 +112,7 @@ export class RootServer {
     private acceptMasterConnection(conn: ws): void {
         conn.addEventListener('message', (event)=>{
             try {
-                this.room.handleRequest(JSON.parse(event.data));
+                this.room.handleRequest(JSON.parse(event.data), INTERNAL_SENDER);
                 conn.send(JSON.stringify({'code':'success'}));
             } catch(e) {
                 const err: Error = e;
@@ -134,7 +135,7 @@ export class RootServer {
     private acceptPlayerConnection(conn: ws, name: string): void {
         conn.addEventListener('message', (event)=>{
             try {
-                this.room.handleRequest(JSON.parse(event.data));
+                this.room.handleRequest(JSON.parse(event.data), {type: SenderType.PLAYER, player: name});
                 conn.send(JSON.stringify({'code':'success'}));
             } catch(e) {
                 const err: Error = e;
@@ -149,7 +150,7 @@ export class RootServer {
                 player: name
             };
             this.playerConnections.delete(conn);
-            this.room.handleRequest(left);
+            this.room.handleRequest(left, INTERNAL_SENDER);
         });
         conn.addEventListener('error', (event)=>{
             const left: PlayerDisconnectRequest = {
@@ -158,7 +159,7 @@ export class RootServer {
             };
             console.error('error in client conn', event);
             this.playerConnections.delete(conn);
-            this.room.handleRequest(left);
+            this.room.handleRequest(left, INTERNAL_SENDER);
         });
         this.playerHistory.forEach(e=>conn.send(JSON.stringify(e), closeOnErrorDefined('player-replay', conn)));
         this.playerConnections.add(conn);

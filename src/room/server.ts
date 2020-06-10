@@ -24,6 +24,8 @@ import {
 import { mapToClient, NewServerGameEvent, NormalEvent } from '../game/logic/game.event';
 import { GameServer } from '../game/server';
 import { newServerGameEvent } from '../game/logic/server-game';
+import * as perm from '../util/sender';
+import { RequestSender, SenderType } from '../util/sender';
 
 
 export class RoomServer {
@@ -124,23 +126,28 @@ export class RoomServer {
 
   // operations for handling request
 
-  handleRequest(req: RoomRequest): void {
-    let ret: Array<NormalRoomEvent> | Error;
+  /**
+   * handle request
+   * @param req the request
+   * @param sender send by who, string for player, null for system internal
+   */
+  handleRequest(req: RoomRequest, sender: RequestSender): void {
+    let ret: Array<NormalRoomEvent> ;
     switch (req.type) {
       case RoomRequestType.CONNECT:
-        ret = this.wrap(this.handlePlayerConnect(req as PlayerConnectRequest));
+        ret = this.wrap(this.handlePlayerConnect(req as PlayerConnectRequest, sender));
         break;
       case RoomRequestType.DISCONNECT:
-        ret = this.wrap(this.handlePlayerDisconnect(req as PlayerDisconnectRequest));
+        ret = this.wrap(this.handlePlayerDisconnect(req as PlayerDisconnectRequest, sender));
         break;
       case RoomRequestType.READY:
-        ret = this.wrap(this.handlePlayerReady(req as PlayerReadyRequest));
+        ret = this.wrap(this.handlePlayerReady(req as PlayerReadyRequest, sender));
         break;
       case RoomRequestType.UNREADY:
-        ret = this.wrap(this.handlePlayerUnready(req as PlayerUnreadyRequest));
+        ret = this.wrap(this.handlePlayerUnready(req as PlayerUnreadyRequest, sender));
         break;
       case RoomRequestType.START: {
-        const oret = this.handleGameStart(req as GameStartRequest);
+        const oret = this.handleGameStart(req as GameStartRequest, sender);
         //side-effects
         if(!(oret instanceof Error)) {
           this._game = new GameServer(oret.event as NewServerGameEvent);
@@ -151,41 +158,22 @@ export class RoomServer {
         break;
       }
       case RoomRequestType.GAME:
-        ret = [];
-        if(this._game === null) {
-          ret = new Error("error.game_not_started");
-        } else {
-          this._game.handleRequest((req as GameRequest).request);
-          if(this._game.game.winner !== undefined) {
-            ret = [
-              {
-                type: RoomEventType.GAME_FINISHED
-              },
-              {
-                type: RoomEventType.ROOM_CLOSED,
-                reason: 'game_finished'
-              }
-            ];
-          }
-        }
+        ret = this.wrap(this.handleGameRequest(req as GameRequest, sender));
         break;
       case RoomRequestType.CHAT:
-        ret = new Error("TODO");
-        break;
+        throw new Error("TODO");
     }
-    //throw on fail, apply event on done
-    if (ret instanceof Error) {
-      throw ret;
-    } else {
-      ret.forEach(ret=>this.acceptAndSendEvent(ret));
-    }
+    //apply events
+    ret.forEach(ret=>this.acceptAndSendEvent(ret));
   }
 
-  private handlePlayerConnect(req: PlayerConnectRequest): PlayerJoinEvent | Error | null {
+  private handlePlayerConnect(req: PlayerConnectRequest, sender: RequestSender): PlayerJoinEvent | null {
+    perm.assertInternalSender(sender);
+
     if(this.room.state === RoomState.IDLE) {
       // still in room state
       if(this.room.playerIDs.findIndex(v=>v===req.player) != -1) {
-        return new Error("error.name_repeated");
+        throw new Error("error.name_repeated");
       }
       return {
         type: RoomEventType.PLAYER_JOIN,
@@ -194,14 +182,15 @@ export class RoomServer {
     } else {
       //playing state
       if(this.room.playerIDs.findIndex(v=>v===req.player) == -1) {
-        return new Error("error.not_playing_player");
+        throw new Error("error.not_playing_player");
       } else {
         return null;
       }
     }
   }
 
-  private handlePlayerDisconnect(req: PlayerDisconnectRequest): PlayerLeftEvent | Error | null {
+  private handlePlayerDisconnect(req: PlayerDisconnectRequest, sender: RequestSender): PlayerLeftEvent | null {
+    perm.assertInternalSender(sender);
     //trivially success
     if(this.room.playerIDs.find(v=>v===req.player) === undefined) {
       return null;
@@ -212,12 +201,14 @@ export class RoomServer {
     };
   }
 
-  private handlePlayerReady(req: PlayerReadyRequest): PlayerReadyEvent | Error {
+  private handlePlayerReady(req: PlayerReadyRequest, sender: RequestSender): PlayerReadyEvent {
+    perm.assertTrue(sender.type === SenderType.PLAYER && req.player === sender.player);
+
     if(this.room.state !== RoomState.IDLE) {
-      return new Error("error.game_already_started");
+      throw new Error("error.game_already_started");
     } else {
       if(this.room.playerIDs.findIndex(v=>v===req.player) === -1) {
-        return new Error("error.player_not_exists");
+        throw new Error("error.player_not_exists");
       }
       return {
         type: RoomEventType.PLAYER_READY,
@@ -226,12 +217,14 @@ export class RoomServer {
     }
   }
 
-  private handlePlayerUnready(req: PlayerUnreadyRequest): PlayerUnreadyEvent | Error {
+  private handlePlayerUnready(req: PlayerUnreadyRequest, sender: RequestSender): PlayerUnreadyEvent {
+    perm.assertTrue(sender.type === SenderType.PLAYER && req.player === sender.player);
+
     if(this.room.state !== RoomState.IDLE) {
-      return new Error("error.game_already_started");
+      throw new Error("error.game_already_started");
     } else {
       if(this.room.playerIDs.findIndex(v=>v===req.player) === -1) {
-        return new Error("error.player_not_exists");
+        throw new Error("error.player_not_exists");
       }
       return {
         type: RoomEventType.PLAYER_UNREADY,
@@ -241,9 +234,11 @@ export class RoomServer {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private handleGameStart(_req: GameStartRequest): GameStartedEvent | Error {
+  private handleGameStart(_req: GameStartRequest, sender: RequestSender): GameStartedEvent {
+    //TODO: this is to please typescript
+    sender.type;
     if(this.room.state != RoomState.IDLE) {
-      return new Error("error.already_started");
+      throw new Error("error.already_started");
     }
     return {
       type: RoomEventType.GAME_STARTED,
@@ -254,11 +249,33 @@ export class RoomServer {
     };
   }
 
-  private wrap(e: NormalRoomEvent | Error | null): Array<NormalRoomEvent> | Error {
-    if(e instanceof Error) {
-      return e;
-    } else if(e === null) {
+  private handleGameRequest(req: GameRequest, sender: RequestSender): Array<NormalRoomEvent> {
+    sender.type;//TODO: please typescript
+    if(this._game === null) {
+      throw new Error("error.game_not_started");
+    } else {
+      this._game.handleRequest((req as GameRequest).request);
+      if(this._game.game.winner !== undefined) {
+        return [
+          {
+            type: RoomEventType.GAME_FINISHED
+          },
+          {
+            type: RoomEventType.ROOM_CLOSED,
+            reason: 'game_finished'
+          }
+        ];
+      } else {
+        return [];
+      }
+    }
+  }
+
+  private wrap(e: Array<NormalRoomEvent> | NormalRoomEvent | null): Array<NormalRoomEvent> {
+    if(e === null) {
       return [];
+    } else if(e instanceof Array) {
+      return e;
     } else {
       return [e];
     }
