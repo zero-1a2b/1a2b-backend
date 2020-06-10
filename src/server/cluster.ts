@@ -41,7 +41,10 @@ export class RootServers {
 
     private startServer(): void {
         this.koa = websockify(new Koa());
-        this.koa.use(this.cors());
+        const koaOptions = {
+            credentials: true
+        };
+        this.koa.use(this.cors(koaOptions));
         console.log("starting server listening on 8085");
         this.server = this.koa.listen(8085);
         this.registerRoutes(this.koa);
