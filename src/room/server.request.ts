@@ -1,5 +1,6 @@
-import { ChatLine } from './logic/room';
+import { ChatLine, Room } from './logic/room';
 import { GameServerRequest } from '../game/server.request';
+import { ClientGame } from '../game/logic/client-game';
 
 
 export enum RoomRequestType {
@@ -9,7 +10,8 @@ export enum RoomRequestType {
   UNREADY = "unready",
   START = "start",
   GAME = "game",
-  CHAT = "chat"
+  CHAT = "chat",
+  GET_STATE = "get_state"
 }
 
 export interface RoomServerRequest {
@@ -69,6 +71,20 @@ export interface ChatRequest extends RoomServerRequest {
   type: RoomRequestType.CHAT;
 
   msg: ChatLine;
+
+}
+
+export interface GetStateRequest extends RoomServerRequest {
+
+  type: RoomRequestType.GET_STATE;
+
+}
+
+export interface GetStateResponse {
+
+  room: Omit<Room, 'playerReady' | 'handleEvent'> & { playerReady: { [key: string]: boolean } };
+
+  game: ClientGame;
 
 }
 

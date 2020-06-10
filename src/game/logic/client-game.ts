@@ -11,7 +11,7 @@ export class ClientGame extends Game {
 
 
   constructor(
-    readonly game: Game,
+    game: Game,
   ) {
     super(game.players, game.winner, game.guesser, game.config);
   }
@@ -19,7 +19,7 @@ export class ClientGame extends Game {
 
   handleEvent(event: NormalGameEvent): ClientGame {
     return new ClientGame(
-      this.game.handleEvent(event),
+      super.handleEvent(event)
     );
   }
 

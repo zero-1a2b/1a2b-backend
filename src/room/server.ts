@@ -20,14 +20,14 @@ import {
   PlayerReadyRequest,
   PlayerUnreadyRequest,
   RoomServerRequest,
-  RoomRequestType, ChatRequest,
+  RoomRequestType, ChatRequest, GetStateRequest, GetStateResponse,
 } from './server.request';
 import { mapToClient, NewServerGameEvent, NormalGameEvent } from '../game/logic/game.event';
 import { GameServer } from '../game/server';
-import { newServerGameEvent } from '../game/logic/server-game';
+import { mapToClient as mapStateToClient, newServerGameEvent } from '../game/logic/server-game';
 import * as perm from '../util/sender';
 import { assertTrue, RequestSender, SenderType } from '../util/sender';
-import { reduce } from 'lodash';
+import * as _ from 'lodash';
 
 
 export class RoomServer {
@@ -133,20 +133,21 @@ export class RoomServer {
    * @param req the request
    * @param sender send by who, string for player, null for system internal
    */
-  handleRequest(req: RoomServerRequest, sender: RequestSender): void {
-    let ret: Array<NormalRoomEvent> ;
+  handleRequest(req: RoomServerRequest, sender: RequestSender): object | null {
+    let events: Array<NormalRoomEvent>;
+    let ret: object | null = null;
     switch (req.type) {
       case RoomRequestType.CONNECT:
-        ret = this.wrap(this.handlePlayerConnect(req as PlayerConnectRequest, sender));
+        events = this.wrap(this.handlePlayerConnect(req as PlayerConnectRequest, sender));
         break;
       case RoomRequestType.DISCONNECT:
-        ret = this.wrap(this.handlePlayerDisconnect(req as PlayerDisconnectRequest, sender));
+        events = this.wrap(this.handlePlayerDisconnect(req as PlayerDisconnectRequest, sender));
         break;
       case RoomRequestType.READY:
-        ret = this.wrap(this.handlePlayerReady(req as PlayerReadyRequest, sender));
+        events = this.wrap(this.handlePlayerReady(req as PlayerReadyRequest, sender));
         break;
       case RoomRequestType.UNREADY:
-        ret = this.wrap(this.handlePlayerUnready(req as PlayerUnreadyRequest, sender));
+        events = this.wrap(this.handlePlayerUnready(req as PlayerUnreadyRequest, sender));
         break;
       case RoomRequestType.START: {
         const oret = this.handleGameStart(req as GameStartRequest, sender);
@@ -156,18 +157,23 @@ export class RoomServer {
           this._game.events.subscribe(v => this.onGameEvent(v));
           this._game.start();
         }
-        ret = this.wrap(oret);
+        events = this.wrap(oret);
         break;
       }
       case RoomRequestType.GAME:
-        ret = this.wrap(this.handleGameRequest(req as GameRequest, sender));
+        events = this.wrap(this.handleGameRequest(req as GameRequest, sender));
         break;
       case RoomRequestType.CHAT:
-        ret = this.wrap(this.handleChatRequest(req as ChatRequest, sender));
+        events = this.wrap(this.handleChatRequest(req as ChatRequest, sender));
+        break;
+      case RoomRequestType.GET_STATE:
+        events = [];
+        ret = this.handleGetState(req as GetStateRequest, sender);
         break;
     }
     //apply events
-    ret.forEach(ret=>this.acceptAndSendEvent(ret));
+    events.forEach(r=>this.acceptAndSendEvent(r));
+    return ret;
   }
 
   private handlePlayerConnect(req: PlayerConnectRequest, sender: RequestSender): PlayerJoinEvent | null {
@@ -243,7 +249,7 @@ export class RoomServer {
       throw new Error("error.already_started");
     }
 
-    const allReady = reduce(this.room.playerReady.values(), (acc,val)=>acc&&val);
+    const allReady = _.reduce([...this.room.playerReady.values()], (acc,val)=>acc&&val, true);
     if(!allReady) {
       throw new Error("error.not_all_prepared");
     }
@@ -258,7 +264,6 @@ export class RoomServer {
   }
 
   private handleGameRequest(req: GameRequest, sender: RequestSender): Array<NormalRoomEvent> {
-    sender.type;//TODO: please typescript
     if(this._game === null) {
       throw new Error("error.game_not_started");
     } else {
@@ -275,6 +280,23 @@ export class RoomServer {
       } else {
         return [];
       }
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private handleGetState(_req: GetStateRequest, _sender: RequestSender): GetStateResponse {
+    const ready = {};
+    this.room.playerReady.forEach((value, key) => ready[key]=value);
+    return {
+      room: {
+        id: this.room.id,
+        state: this.room.state,
+        playerIDs: this.room.playerIDs,
+        playerReady: ready,
+        chats: this.room.chats,
+        gameConfig: this.room.gameConfig
+      },
+      game: this.game !== null ? mapStateToClient(this.game.game) : null
     }
   }
 

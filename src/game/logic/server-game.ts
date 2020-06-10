@@ -2,6 +2,7 @@ import { GameEventType, NewServerGameEvent, NormalGameEvent } from './game.event
 import { shuffle, take } from 'lodash';
 import { Game, GameConfig } from './game';
 import { Player } from './player';
+import { ClientGame } from './client-game';
 
 
 /**
@@ -52,6 +53,17 @@ export function newServerGameEvent(
     players: shuffledPlayers,
     config: config,
   };
+}
+
+export function mapToClient(server: ServerGame): ClientGame {
+  return new ClientGame(
+    new Game(
+      server.players,
+      server.winner,
+      server.guesser,
+      server.config
+    )
+  );
 }
 
 

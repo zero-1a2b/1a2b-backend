@@ -1,4 +1,4 @@
-import { RoomServer} from '../../src/room/server';
+import { RoomServer } from '../../src/room/server';
 import { GameEventType } from '../../src/game/logic/game.event';
 import {
   GameRequest,
@@ -8,7 +8,7 @@ import {
   PlayerReadyRequest,
   PlayerUnreadyRequest,
   RoomServerRequest,
-  RoomRequestType, ChatRequest,
+  RoomRequestType, ChatRequest, GetStateRequest,
 } from '../../src/room/server.request';
 import {
   GameStartedEvent,
@@ -25,39 +25,39 @@ import { INTERNAL_SENDER, PlayerSender, RequestSender, SenderType } from '../../
 
 const testSender: PlayerSender = {
   type: SenderType.PLAYER,
-  player: 'test'
+  player: 'test',
 };
 
 const test2Sender: PlayerSender = {
   type: SenderType.PLAYER,
-  player: 'test2'
+  player: 'test2',
 };
 
 
 const connectRequest: PlayerConnectRequest = {
   type: RoomRequestType.CONNECT,
-  player: 'test'
+  player: 'test',
 };
 
 const readyRequest: PlayerReadyRequest = {
   type: RoomRequestType.READY,
-  player: 'test'
+  player: 'test',
 };
 
 const connect2Request: PlayerConnectRequest = {
   type: RoomRequestType.CONNECT,
-  player: 'test2'
+  player: 'test2',
 };
 
 const startRequest: GameStartRequest = {
-  type: RoomRequestType.START
+  type: RoomRequestType.START,
 };
 
 
 describe('RoomServer.newRoom', () => {
 
   it('works', () => {
-    expect(RoomServer.newRoom("123")).toBeTruthy();
+    expect(RoomServer.newRoom('123')).toBeTruthy();
   });
 
 });
@@ -67,7 +67,7 @@ describe('RoomServer constructor', () => {
   it('works', () => {
     expect(new RoomServer({
       type: RoomEventType.NEW_ROOM,
-      id: "123"
+      id: '123',
     })).toBeTruthy();
   });
 
@@ -77,8 +77,8 @@ describe('RoomServer lifecycle works', () => {
 
   it('works', () => {
     let recvClient: RoomClosedEvent = null;
-    const server = RoomServer.newRoom("123");
-    server.clientEvents.subscribe(v=>v.type === RoomEventType.ROOM_CLOSED ? recvClient = v : null);
+    const server = RoomServer.newRoom('123');
+    server.clientEvents.subscribe(v => v.type === RoomEventType.ROOM_CLOSED ? recvClient = v : null);
 
     server.close();
 
@@ -87,8 +87,8 @@ describe('RoomServer lifecycle works', () => {
 
   it('closes game correctly', () => {
     let recvClient: RoomClosedEvent = null;
-    const server = RoomServer.newRoom("123");
-    server.clientEvents.subscribe(v=>v.type === RoomEventType.ROOM_CLOSED ? recvClient = v : null);
+    const server = RoomServer.newRoom('123');
+    server.clientEvents.subscribe(v => v.type === RoomEventType.ROOM_CLOSED ? recvClient = v : null);
 
     server.handleRequest(connectRequest, INTERNAL_SENDER);
     server.handleRequest(readyRequest, testSender);
@@ -105,9 +105,9 @@ describe('RoomServer eventing works', () => {
   it('emit works', () => {
     let recvClient = false;
     let recvServer = false;
-    const server = RoomServer.newRoom("123");
-    server.events.subscribe(()=>recvServer=true);
-    server.clientEvents.subscribe(()=>recvClient=true);
+    const server = RoomServer.newRoom('123');
+    server.events.subscribe(() => recvServer = true);
+    server.clientEvents.subscribe(() => recvClient = true);
 
     server.handleRequest(connectRequest, INTERNAL_SENDER);
     server.handleRequest(readyRequest, testSender);
@@ -119,7 +119,7 @@ describe('RoomServer eventing works', () => {
   });
 
   it('accept works', () => {
-    const server = RoomServer.newRoom("123");
+    const server = RoomServer.newRoom('123');
 
     server.handleRequest(connectRequest, INTERNAL_SENDER);
     server.handleRequest(readyRequest, testSender);
@@ -127,10 +127,10 @@ describe('RoomServer eventing works', () => {
 
     server.acceptEvent({
       type: RoomEventType.PLAYER_READY,
-      player: 'test2'
+      player: 'test2',
     });
 
-    expect(server.room.playerReady.get("test2")).toEqual(true);
+    expect(server.room.playerReady.get('test2')).toEqual(true);
 
     server.close();
   });
@@ -141,17 +141,17 @@ describe('RoomServer eventing works', () => {
 
 const joinEvent: PlayerJoinEvent = {
   type: RoomEventType.PLAYER_JOIN,
-  player: 'test'
+  player: 'test',
 };
 
 const readyEvent: PlayerReadyEvent = {
   type: RoomEventType.PLAYER_READY,
-  player: 'test'
+  player: 'test',
 };
 
 const join2Event: PlayerJoinEvent = {
   type: RoomEventType.PLAYER_JOIN,
-  player: 'test2'
+  player: 'test2',
 };
 
 const startedEvent: GameStartedEvent = {
@@ -160,13 +160,13 @@ const startedEvent: GameStartedEvent = {
     type: GameEventType.NEW_GAME_SERVER,
     config: Game.DEFAULT_GAME_CONFIG,
     players: ['test'],
-    answer: [1,2,3,4]
-  }
+    answer: [1, 2, 3, 4],
+  },
 };
 
 
 // noinspection JSUnusedLocalSymbols
-type testOp = () => { room: RoomServer, events: Array<NormalRoomEvent> };
+type testOp = () => { room: RoomServer, events: Array<NormalRoomEvent>, ret: object };
 
 interface TestRequestTemplate<Request extends RoomServerRequest> {
 
@@ -181,17 +181,18 @@ interface TestRequestTemplate<Request extends RoomServerRequest> {
 }
 
 function testRequest<Request extends RoomServerRequest>(template: TestRequestTemplate<Request>): void {
-  const room = RoomServer.newRoom("123");
-  template.prevEvent.forEach(v=>room.acceptEvent(v));
+  const room = RoomServer.newRoom('123');
+  template.prevEvent.forEach(v => room.acceptEvent(v));
 
-  template.assertions(()=>{
+  template.assertions(() => {
     const events = [];
-    const sub = room.events.subscribe(v=>events.push(v));
-    room.handleRequest(template.request, template.sender === undefined? testSender : template.sender);
+    const sub = room.events.subscribe(v => events.push(v));
+    const ret = room.handleRequest(template.request, template.sender === undefined ? testSender : template.sender);
     sub.unsubscribe();
     return {
       room: room,
-      events: events
+      events: events,
+      ret: ret,
     };
   });
 
@@ -206,7 +207,7 @@ describe('Room handles PlayerConnect Correctly', () => {
       prevEvent: [],
       request: {
         type: RoomRequestType.CONNECT,
-        player: 'a'
+        player: 'a',
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
@@ -215,26 +216,26 @@ describe('Room handles PlayerConnect Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_JOIN,
-            player: 'a'
-          }
-        ])
-      }
+            player: 'a',
+          },
+        ]);
+      },
     });
   });
 
   it('rejects repeated player on idle state', () => {
     testRequest<PlayerConnectRequest>({
       prevEvent: [
-        joinEvent
+        joinEvent,
       ],
       request: {
         type: RoomRequestType.CONNECT,
-        player: joinEvent.player
+        player: joinEvent.player,
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
         expect(run).toThrow();
-      }
+      },
     });
   });
 
@@ -243,16 +244,16 @@ describe('Room handles PlayerConnect Correctly', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        joinEvent
+        startedEvent,
       ],
       request: {
         type: RoomRequestType.CONNECT,
-        player: joinEvent.player
+        player: joinEvent.player,
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
         expect(run).not.toThrow();
-      }
+      },
     });
   });
 
@@ -261,16 +262,16 @@ describe('Room handles PlayerConnect Correctly', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        startedEvent
+        startedEvent,
       ],
       request: {
         type: RoomRequestType.CONNECT,
-        player: 'a'
+        player: 'a',
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
         expect(run).toThrow();
-      }
+      },
     });
   });
 
@@ -285,7 +286,7 @@ describe('Room handles PlayerDisconnect Correctly', () => {
       ],
       request: {
         type: RoomRequestType.DISCONNECT,
-        player: joinEvent.player
+        player: joinEvent.player,
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
@@ -294,10 +295,10 @@ describe('Room handles PlayerDisconnect Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_LEFT,
-            player: 'test'
-          }
-        ])
-      }
+            player: 'test',
+          },
+        ]);
+      },
     });
   });
 
@@ -306,11 +307,11 @@ describe('Room handles PlayerDisconnect Correctly', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        startedEvent
+        startedEvent,
       ],
       request: {
         type: RoomRequestType.DISCONNECT,
-        player: joinEvent.player
+        player: joinEvent.player,
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
@@ -319,10 +320,10 @@ describe('Room handles PlayerDisconnect Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_LEFT,
-            player: 'test'
-          }
-        ])
-      }
+            player: 'test',
+          },
+        ]);
+      },
     });
   });
 
@@ -333,11 +334,11 @@ describe('Room handles PlayerReady Correctly', () => {
   it('works', () => {
     testRequest<PlayerReadyRequest>({
       prevEvent: [
-        joinEvent
+        joinEvent,
       ],
       request: {
         type: RoomRequestType.READY,
-        player: joinEvent.player
+        player: joinEvent.player,
       },
       assertions: (run) => {
         const { room, events } = run();
@@ -345,25 +346,25 @@ describe('Room handles PlayerReady Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_READY,
-            player: joinEvent.player
-          }
-        ])
-      }
+            player: joinEvent.player,
+          },
+        ]);
+      },
     });
   });
 
   it('rejects not existing player', () => {
     testRequest<PlayerReadyRequest>({
       prevEvent: [
-        joinEvent
+        joinEvent,
       ],
       request: {
         type: RoomRequestType.READY,
-        player: 'test0'
+        player: 'test0',
       },
       assertions: (run) => {
         expect(run).toThrow();
-      }
+      },
     });
   });
 
@@ -372,15 +373,15 @@ describe('Room handles PlayerReady Correctly', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        startedEvent
+        startedEvent,
       ],
       request: {
         type: RoomRequestType.READY,
-        player: 'test0'
+        player: 'test0',
       },
       assertions: (run) => {
         expect(run).toThrow();
-      }
+      },
     });
   });
 
@@ -392,11 +393,11 @@ describe('Room handles PlayerUnready Correctly', () => {
     testRequest<PlayerUnreadyRequest>({
       prevEvent: [
         joinEvent,
-        readyEvent
+        readyEvent,
       ],
       request: {
         type: RoomRequestType.UNREADY,
-        player: joinEvent.player
+        player: joinEvent.player,
       },
       assertions: (run) => {
         const { room, events } = run();
@@ -404,10 +405,10 @@ describe('Room handles PlayerUnready Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_UNREADY,
-            player: joinEvent.player
-          }
-        ])
-      }
+            player: joinEvent.player,
+          },
+        ]);
+      },
     });
   });
 
@@ -416,11 +417,11 @@ describe('Room handles PlayerUnready Correctly', () => {
       prevEvent: [],
       request: {
         type: RoomRequestType.UNREADY,
-        player: 'test0'
+        player: 'test0',
       },
       assertions: (run) => {
         expect(run).toThrow();
-      }
+      },
     });
   });
 
@@ -429,15 +430,15 @@ describe('Room handles PlayerUnready Correctly', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        startedEvent
+        startedEvent,
       ],
       request: {
         type: RoomRequestType.UNREADY,
-        player: 'test'
+        player: 'test',
       },
       assertions: (run) => {
         expect(run).toThrow();
-      }
+      },
     });
   });
 
@@ -449,16 +450,16 @@ describe('Room handles GameStarted Correctly', () => {
     testRequest<GameStartRequest>({
       prevEvent: [
         joinEvent,
-        readyEvent
+        readyEvent,
       ],
       request: {
-        type: RoomRequestType.START
+        type: RoomRequestType.START,
       },
       assertions: (run) => {
         const { room, events } = run();
         expect(room.game).not.toBeNull();
         expect(events[0].type).toEqual(RoomEventType.GAME_STARTED);
-      }
+      },
     });
   });
 
@@ -467,14 +468,14 @@ describe('Room handles GameStarted Correctly', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        startedEvent
+        startedEvent,
       ],
       request: {
-        type: RoomRequestType.START
+        type: RoomRequestType.START,
       },
       assertions: (run) => {
         expect(run).toThrow();
-      }
+      },
     });
   });
 
@@ -483,14 +484,14 @@ describe('Room handles GameStarted Correctly', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        join2Event
+        join2Event,
       ],
       request: {
-        type: RoomRequestType.START
+        type: RoomRequestType.START,
       },
       assertions: (run) => {
         expect(run).toThrow();
-      }
+      },
     });
   });
 
@@ -503,18 +504,18 @@ describe('Room handles GameRequest', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        startedEvent
+        startedEvent,
       ],
       request: {
         type: RoomRequestType.GAME,
         request: {
-          type: ServerGameRequestType.TIMEOUT
-        }
+          type: ServerGameRequestType.TIMEOUT,
+        },
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
         expect(run).not.toThrow();
-      }
+      },
     });
   });
 
@@ -527,37 +528,77 @@ describe('Room handles ChatRequest', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        startedEvent
+        startedEvent,
       ],
       request: {
         type: RoomRequestType.CHAT,
         msg: {
-          name: "test",
-          msg: "hi!"
-        }
+          name: 'test',
+          msg: 'hi!',
+        },
       },
       assertions: (run) => {
         const { room, events } = run();
         expect(room.room.chats).toEqual(
           [
             {
-              name: "test",
-              msg: "hi!"
-            }
-          ]
+              name: 'test',
+              msg: 'hi!',
+            },
+          ],
         );
         expect(events).toEqual(
           [
             {
-              type: "chat",
+              type: 'chat',
               msg: {
-                name: "test",
-                msg: "hi!"
-              }
-            }
-          ]
-        )
-      }
+                name: 'test',
+                msg: 'hi!',
+              },
+            },
+          ],
+        );
+      },
+    });
+  });
+
+});
+
+describe('Room handles GetStateRequest', () => {
+
+  it('works', () => {
+    testRequest<GetStateRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent,
+      ],
+      request: {
+        type: RoomRequestType.GET_STATE,
+      },
+      assertions: (run) => {
+        const { ret: ret } = run();
+
+        expect(JSON.parse(JSON.stringify(ret))).toEqual(
+          {
+            room: {
+              id: '123',
+              state: 1,
+              playerIDs: ['test'],
+              playerReady: {
+                test: true
+              },
+              chats: [],
+              gameConfig: { answerLength: 4, playerTimeoutMillis: 60000 },
+            },
+            game: {
+              players: ['test'],
+              guesser: 0,
+              config: { answerLength: 4, playerTimeoutMillis: 60000 }
+            },
+          },
+        );
+      },
     });
   });
 
@@ -570,35 +611,35 @@ describe('simulated play through', () => {
   function connect(name: string): PlayerConnectRequest {
     return {
       type: RoomRequestType.CONNECT,
-      player: name
-    }
+      player: name,
+    };
   }
 
   function disconnect(name: string): PlayerDisconnectRequest {
     return {
       type: RoomRequestType.DISCONNECT,
-      player: name
-    }
+      player: name,
+    };
   }
 
   function ready(name: string): PlayerReadyRequest {
     return {
       type: RoomRequestType.READY,
-      player: name
+      player: name,
     };
   }
 
   function unready(name: string): PlayerReadyRequest {
     return {
       type: RoomRequestType.READY,
-      player: name
+      player: name,
     };
   }
 
   function gameStart(): GameStartRequest {
     return {
-      type: RoomRequestType.START
-    }
+      type: RoomRequestType.START,
+    };
   }
 
   function guess(player: string, guess: number[]): GameRequest {
@@ -607,9 +648,9 @@ describe('simulated play through', () => {
       request: {
         type: ServerGameRequestType.GUESS,
         player: player,
-        guess: guess
-      } as GuessRequest
-    }
+        guess: guess,
+      } as GuessRequest,
+    };
   }
 
   function chat(player: string, msg: string): ChatRequest {
@@ -617,13 +658,13 @@ describe('simulated play through', () => {
       type: RoomRequestType.CHAT,
       msg: {
         name: player,
-        msg: msg
-      }
-    }
+        msg: msg,
+      },
+    };
   }
 
   it('complex case', () => {
-    const server = RoomServer.newRoom("123");
+    const server = RoomServer.newRoom('123');
 
     server.handleRequest(connect('test'), INTERNAL_SENDER);
     server.handleRequest(ready('test'), testSender);
@@ -633,6 +674,7 @@ describe('simulated play through', () => {
     server.handleRequest(connect('test2'), INTERNAL_SENDER);
     server.handleRequest(disconnect('test2'), INTERNAL_SENDER);
     server.handleRequest(connect('test2'), INTERNAL_SENDER);
+    server.handleRequest(ready('test2'), test2Sender);
 
     server.handleRequest(gameStart(), testSender);
 
@@ -642,13 +684,13 @@ describe('simulated play through', () => {
     const playerA = server.game.game.players[0];
     const playerB = server.game.game.players[1];
 
-    const wrongAnswer = [...server.game.game.answer].map((v,idx)=>idx===3?-v:v);
+    const wrongAnswer = [...server.game.game.answer].map((v, idx) => idx === 3 ? -v : v);
     server.handleRequest(
       guess(playerA, wrongAnswer),
       {
         type: SenderType.PLAYER,
-        player: playerA
-      }
+        player: playerA,
+      },
     );
 
     const rightAnswer = [...server.game.game.answer];
@@ -656,8 +698,8 @@ describe('simulated play through', () => {
       guess(playerB, rightAnswer),
       {
         type: SenderType.PLAYER,
-        player: playerB
-      }
+        player: playerB,
+      },
     );
 
     expect(server.game.game.winner).toEqual(playerB);
