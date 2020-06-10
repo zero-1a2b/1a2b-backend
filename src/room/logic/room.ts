@@ -1,5 +1,5 @@
 import {
-  ChangeSettingsEvent,
+  ChangeSettingsEvent, ChatEvent,
   GameFinishedEvent,
   GameStartedEvent,
   NewRoomEvent,
@@ -16,10 +16,15 @@ import { Game, GameConfig } from '../../game/logic/game';
 import { filter, map } from 'lodash';
 
 
+export interface ChatLine {
+  name: string,
+  msg: string
+}
+
+
 export enum RoomState {
   IDLE,
-  GAMING,
-  FINISHED
+  GAMING
 }
 
 
@@ -31,6 +36,7 @@ export class Room {
       RoomState.IDLE,
       [],
       new Map(),
+      [],
       Game.DEFAULT_GAME_CONFIG,
     );
   }
@@ -41,7 +47,8 @@ export class Room {
     readonly state: RoomState,
     readonly playerIDs: string[],
     readonly playerReady: Map<string, boolean>,
-    readonly gameConfig: GameConfig,
+    readonly chats: ChatLine[],
+    readonly gameConfig: GameConfig
   ) {}
 
 
@@ -67,6 +74,8 @@ export class Room {
           return this.handleGameFinishedEvent(event);
       case RoomEventType.ROOM_CLOSED:
         return this.handleRoomClosedEvent(event);
+      case RoomEventType.CHAT:
+        return this.handleChatEvent(event);
     }
   }
 
@@ -126,12 +135,34 @@ export class Room {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private handleGameFinishedEvent(_e: GameFinishedEvent): Room {
-    return this.setRoomState(RoomState.FINISHED);
+    const newReady = new Map<string, boolean>();
+    this.playerReady.forEach((value, key) => newReady[key]=value);
+    return new Room(
+      this.id,
+      RoomState.IDLE,
+      this.playerIDs,
+      newReady,
+      this.chats,
+      this.gameConfig,
+    );
+  }
+
+  private handleChatEvent(e: ChatEvent): Room {
+    this.chats.push(e.msg);
+    return new Room(
+      this.id,
+      this.state,
+      this.playerIDs,
+      this.playerReady,
+      this.chats,
+      this.gameConfig,
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private handleRoomClosedEvent(_e: RoomClosedEvent): Room {
-    return this.setRoomState(RoomState.FINISHED);
+    //no-op
+    return this;
   }
 
   // mutator to eliminate update boilerplate
@@ -142,6 +173,7 @@ export class Room {
       state,
       this.playerIDs,
       this.playerReady,
+      this.chats,
       this.gameConfig,
     );
   }
@@ -152,6 +184,7 @@ export class Room {
       this.state,
       this.playerIDs,
       this.playerReady,
+      this.chats,
       {...config},
     );
   }
@@ -162,6 +195,7 @@ export class Room {
       this.state,
       [...playerIDs],
       new Map(playerReady),
+      this.chats,
       this.gameConfig,
     );
   }

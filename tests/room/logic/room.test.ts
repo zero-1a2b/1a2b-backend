@@ -1,5 +1,6 @@
 import {
   ChangeSettingsEvent,
+  ChatEvent,
   GameFinishedEvent,
   GameStartedEvent,
   NewRoomEvent,
@@ -42,6 +43,18 @@ const startedEvent: GameStartedEvent = {
   }
 };
 
+const gameEvent: RoomGameEvent = {
+  type: RoomEventType.GAME_EVENT,
+  event: {
+    type: GameEventType.TIMEOUT
+  }
+};
+
+const gameFinishedEvent: GameFinishedEvent = {
+  type: RoomEventType.GAME_FINISHED
+};
+
+
 
 describe('Room.fromNewRoomEvent works', () => {
 
@@ -65,19 +78,7 @@ describe('Room.fromNewRoomEvent works', () => {
 
 describe('Room handles event correctly', () => {
 
-  const gameEvent: RoomGameEvent = {
-    type: RoomEventType.GAME_EVENT,
-    event: {
-      type: GameEventType.TIMEOUT
-    }
-  };
-
-  const gameFinishedEvent: GameFinishedEvent = {
-    type: RoomEventType.GAME_FINISHED
-  };
-
   it('handles changeSettings', () => {
-
     const changeSettingsEvent: ChangeSettingsEvent = {
       type: RoomEventType.CHANGE_SETTINGS,
       gameConfig: {
@@ -89,10 +90,6 @@ describe('Room handles event correctly', () => {
     const preRoom = room;
     const afterRoom = preRoom.handleEvent(changeSettingsEvent);
 
-    expect(afterRoom.id).toEqual(preRoom.id);
-    expect(afterRoom.state).toEqual(preRoom.state);
-    expect(afterRoom.playerIDs).toEqual(preRoom.playerIDs);
-    expect(afterRoom.playerReady).toEqual(preRoom.playerReady);
     expect(afterRoom.gameConfig).toEqual(
       {
         playerTimeoutMillis: 2000,
@@ -107,11 +104,8 @@ describe('Room handles event correctly', () => {
     const preRoom = room;
     const afterRoom = preRoom.handleEvent(joinEvent);
 
-    expect(afterRoom.id).toEqual(preRoom.id);
-    expect(afterRoom.state).toEqual(preRoom.state);
     expect(afterRoom.playerIDs).toEqual(['test']);
     expect(afterRoom.playerReady).toEqual(new Map().set('test', false));
-    expect(afterRoom.gameConfig).toEqual(preRoom.gameConfig);
 
   });
 
@@ -130,11 +124,9 @@ describe('Room handles event correctly', () => {
     const preRoom = room.handleEvent(joinEvent).handleEvent(joinEvent2);
     const afterRoom = preRoom.handleEvent(leftEvent);
 
-    expect(afterRoom.id).toEqual(preRoom.id);
-    expect(afterRoom.state).toEqual(preRoom.state);
     expect(afterRoom.playerIDs).toEqual(['test2']);
     expect(afterRoom.playerReady).toEqual(new Map().set('test2', false));
-    expect(afterRoom.gameConfig).toEqual(preRoom.gameConfig);
+
   });
 
   it('handles playerRename', () => {
@@ -148,11 +140,9 @@ describe('Room handles event correctly', () => {
     const preRoom = room.handleEvent(joinEvent);
     const afterRoom = preRoom.handleEvent(renameEvent);
 
-    expect(afterRoom.id).toEqual(preRoom.id);
-    expect(afterRoom.state).toEqual(preRoom.state);
     expect(afterRoom.playerIDs).toEqual(['test2']);
     expect(afterRoom.playerReady).toEqual(new Map().set('test2', false));
-    expect(afterRoom.gameConfig).toEqual(preRoom.gameConfig);
+
   });
 
   it('handles playerReady', () => {
@@ -160,11 +150,9 @@ describe('Room handles event correctly', () => {
     const preRoom = room.handleEvent(joinEvent);
     const afterRoom = preRoom.handleEvent(readyEvent);
 
-    expect(afterRoom.id).toEqual(preRoom.id);
-    expect(afterRoom.state).toEqual(preRoom.state);
     expect(afterRoom.playerIDs).toEqual(['test']);
     expect(afterRoom.playerReady).toEqual(new Map().set('test', true));
-    expect(afterRoom.gameConfig).toEqual(preRoom.gameConfig);
+
   });
 
   it('handles playerUnready', () => {
@@ -177,11 +165,8 @@ describe('Room handles event correctly', () => {
     const preRoom = room.handleEvent(joinEvent).handleEvent(readyEvent);
     const afterRoom = preRoom.handleEvent(unreadyEvent);
 
-    expect(afterRoom.id).toEqual(preRoom.id);
-    expect(afterRoom.state).toEqual(preRoom.state);
     expect(afterRoom.playerIDs).toEqual(['test']);
     expect(afterRoom.playerReady).toEqual(new Map().set('test', false));
-    expect(afterRoom.gameConfig).toEqual(preRoom.gameConfig);
 
   });
 
@@ -190,11 +175,7 @@ describe('Room handles event correctly', () => {
     const preRoom = room.handleEvent(joinEvent).handleEvent(readyEvent);
     const room2 = preRoom.handleEvent(startedEvent);
 
-    expect(room2.id).toEqual(preRoom.id);
     expect(room2.state).toEqual(RoomState.GAMING);
-    expect(room2.playerIDs).toEqual(preRoom.playerIDs);
-    expect(room2.playerReady).toEqual(preRoom.playerReady);
-    expect(room2.gameConfig).toEqual(preRoom.gameConfig);
   });
 
   it('handles game event', () => {
@@ -202,11 +183,7 @@ describe('Room handles event correctly', () => {
     const preRoom = room.handleEvent(joinEvent).handleEvent(readyEvent).handleEvent(startedEvent);
     const room2 = preRoom.handleEvent(gameEvent);
 
-    expect(room2.id).toEqual(preRoom.id);
-    expect(room2.state).toEqual(preRoom.state);
-    expect(room2.playerIDs).toEqual(preRoom.playerIDs);
-    expect(room2.playerReady).toEqual(preRoom.playerReady);
-    expect(room2.gameConfig).toEqual(preRoom.gameConfig);
+    expect(room2).toEqual(preRoom);
   });
 
   it('handles gameFinished', () => {
@@ -214,11 +191,22 @@ describe('Room handles event correctly', () => {
     const preRoom = room.handleEvent(joinEvent).handleEvent(readyEvent).handleEvent(startedEvent).handleEvent(gameEvent);
     const room2 = preRoom.handleEvent(gameFinishedEvent);
 
-    expect(room2.id).toEqual(preRoom.id);
-    expect(room2.state).toEqual(RoomState.FINISHED);
-    expect(room2.playerIDs).toEqual(preRoom.playerIDs);
-    expect(room2.playerReady).toEqual(preRoom.playerReady);
-    expect(room2.gameConfig).toEqual(preRoom.gameConfig);
+    expect(room2.state).toEqual(RoomState.IDLE);
+  });
+
+  it('handles chat', () => {
+    const chatEvent: ChatEvent = {
+      type: RoomEventType.CHAT,
+      msg: {
+        name: "player",
+        msg: "test"
+      }
+    };
+
+    const preRoom = room.handleEvent(joinEvent).handleEvent(readyEvent).handleEvent(startedEvent).handleEvent(gameEvent);
+    const room2 = preRoom.handleEvent(chatEvent);
+
+    expect(room2.chats).toEqual([chatEvent.msg]);
   });
 
 });

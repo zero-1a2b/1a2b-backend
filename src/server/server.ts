@@ -2,8 +2,7 @@ import { RoomServer} from '../room/server';
 import { NewRoomEvent, RoomEvent, RoomEventType } from '../room/logic/room.event';
 import * as Koa from 'koa';
 import * as ws from 'ws';
-import { PlayerConnectRequest, PlayerDisconnectRequest, RoomRequestType } from '../room/logic/room.request';
-import { RoomState } from '../room/logic/room';
+import { PlayerConnectRequest, PlayerDisconnectRequest, RoomRequestType } from '../room/server.request';
 import { INTERNAL_SENDER, SenderType } from '../util/sender';
 
 function closeOnErrorDefined(action: string, conn: ws): (e?: Error) => void {
@@ -18,7 +17,7 @@ function closeOnErrorDefined(action: string, conn: ws): (e?: Error) => void {
 export class RootServer {
 
 
-    private room: RoomServer;
+    private room: RoomServer | null;
 
     private masterHistory: RoomEvent[];
 
@@ -55,7 +54,7 @@ export class RootServer {
     }
 
     isDone(): boolean {
-        return this.room.state === RoomState.FINISHED;
+        return this.room === null;
     }
 
     close(): void {
@@ -63,6 +62,7 @@ export class RootServer {
     }
 
     private onClose(): void {
+      this.room = null;
       if(this.masterConnection !== null) {
         this.masterConnection.close();
       }

@@ -1,6 +1,7 @@
 import { EventEmitter } from '../util/EventEmitter';
 import { Room, RoomState } from './logic/room';
 import {
+  ChatEvent,
   GameStartedEvent,
   NewRoomEvent,
   NormalRoomEvent,
@@ -18,9 +19,9 @@ import {
   PlayerDisconnectRequest,
   PlayerReadyRequest,
   PlayerUnreadyRequest,
-  RoomRequest,
-  RoomRequestType,
-} from './logic/room.request';
+  ServerRequest,
+  RoomRequestType, ChatRequest,
+} from './server.request';
 import { mapToClient, NewServerGameEvent, NormalEvent } from '../game/logic/game.event';
 import { GameServer } from '../game/server';
 import { newServerGameEvent } from '../game/logic/server-game';
@@ -90,6 +91,7 @@ export class RoomServer {
   private emitClientEvent(e: NormalRoomEvent): void {
     let result: NormalRoomEvent;
     switch (e.type) {
+      case RoomEventType.CHAT:
       case RoomEventType.CHANGE_SETTINGS:
       case RoomEventType.PLAYER_JOIN:
       case RoomEventType.PLAYER_LEFT:
@@ -131,7 +133,7 @@ export class RoomServer {
    * @param req the request
    * @param sender send by who, string for player, null for system internal
    */
-  handleRequest(req: RoomRequest, sender: RequestSender): void {
+  handleRequest(req: ServerRequest, sender: RequestSender): void {
     let ret: Array<NormalRoomEvent> ;
     switch (req.type) {
       case RoomRequestType.CONNECT:
@@ -161,7 +163,8 @@ export class RoomServer {
         ret = this.wrap(this.handleGameRequest(req as GameRequest, sender));
         break;
       case RoomRequestType.CHAT:
-        throw new Error("TODO");
+        ret = this.wrap(this.handleChatRequest(req as ChatRequest, sender));
+        break;
     }
     //apply events
     ret.forEach(ret=>this.acceptAndSendEvent(ret));
@@ -271,6 +274,20 @@ export class RoomServer {
     }
   }
 
+  // noinspection JSMethodCanBeStatic
+  private handleChatRequest(req: ChatRequest, sender: RequestSender): ChatEvent {
+    perm.assertTrue(
+      perm.isInternalSender(sender)
+      || (perm.isPlayerSender(sender) && sender.player === req.msg.name)
+    );
+
+    return {
+      type: RoomEventType.CHAT,
+      msg: req.msg
+    };
+  }
+
+  // noinspection JSMethodCanBeStatic
   private wrap(e: Array<NormalRoomEvent> | NormalRoomEvent | null): Array<NormalRoomEvent> {
     if(e === null) {
       return [];

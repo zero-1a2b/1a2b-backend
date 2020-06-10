@@ -1,4 +1,5 @@
-import { ServerGameRequest } from '../../game/logic/server-game.request';
+import { ServerGameRequest } from '../game/logic/server-game.request';
+import { ChatLine } from './logic/room';
 
 
 export enum RoomRequestType {
@@ -11,13 +12,13 @@ export enum RoomRequestType {
   CHAT = "chat"
 }
 
-export interface RoomRequest {
+export interface ServerRequest {
 
   type: RoomRequestType;
 
 }
 
-export interface PlayerConnectRequest extends RoomRequest {
+export interface PlayerConnectRequest extends ServerRequest {
 
   type: RoomRequestType.CONNECT;
 
@@ -25,7 +26,7 @@ export interface PlayerConnectRequest extends RoomRequest {
 
 }
 
-export interface PlayerDisconnectRequest extends RoomRequest {
+export interface PlayerDisconnectRequest extends ServerRequest {
 
   type: RoomRequestType.DISCONNECT;
 
@@ -33,7 +34,7 @@ export interface PlayerDisconnectRequest extends RoomRequest {
 
 }
 
-export interface PlayerReadyRequest extends RoomRequest {
+export interface PlayerReadyRequest extends ServerRequest {
 
   type: RoomRequestType.READY;
 
@@ -41,7 +42,7 @@ export interface PlayerReadyRequest extends RoomRequest {
 
 }
 
-export interface PlayerUnreadyRequest extends RoomRequest {
+export interface PlayerUnreadyRequest extends ServerRequest {
 
   type: RoomRequestType.UNREADY;
 
@@ -49,13 +50,13 @@ export interface PlayerUnreadyRequest extends RoomRequest {
 
 }
 
-export interface GameStartRequest extends RoomRequest {
+export interface GameStartRequest extends ServerRequest {
 
   type: RoomRequestType.START;
 
 }
 
-export interface GameRequest extends RoomRequest {
+export interface GameRequest extends ServerRequest {
 
   type: RoomRequestType.GAME;
 
@@ -63,11 +64,11 @@ export interface GameRequest extends RoomRequest {
 
 }
 
-export interface ChatRequest extends RoomRequest {
+export interface ChatRequest extends ServerRequest {
 
   type: RoomRequestType.CHAT;
 
-  msg: string;
+  msg: ChatLine;
 
 }
 

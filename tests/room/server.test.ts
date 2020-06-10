@@ -7,9 +7,9 @@ import {
   PlayerDisconnectRequest,
   PlayerReadyRequest,
   PlayerUnreadyRequest,
-  RoomRequest,
-  RoomRequestType,
-} from '../../src/room/logic/room.request';
+  ServerRequest,
+  RoomRequestType, ChatRequest,
+} from '../../src/room/server.request';
 import {
   GameStartedEvent,
   NormalRoomEvent,
@@ -230,7 +230,7 @@ const startedEvent: GameStartedEvent = {
 // noinspection JSUnusedLocalSymbols
 type testOp = () => { room: RoomServer, events: Array<NormalRoomEvent> };
 
-interface TestRequestTemplate<Request extends RoomRequest> {
+interface TestRequestTemplate<Request extends ServerRequest> {
 
   prevEvent: Array<NormalRoomEvent>;
 
@@ -242,7 +242,7 @@ interface TestRequestTemplate<Request extends RoomRequest> {
 
 }
 
-function testRequest<Request extends RoomRequest>(template: TestRequestTemplate<Request>): void {
+function testRequest<Request extends ServerRequest>(template: TestRequestTemplate<Request>): void {
   const room = RoomServer.newRoom("123");
   template.prevEvent.forEach(v=>room.acceptEvent(v));
 
@@ -565,6 +565,49 @@ describe('Room handles GameRequest', () => {
 
 });
 
+describe('Room handles ChatRequest', () => {
+
+  it('works', () => {
+    testRequest<ChatRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent
+      ],
+      request: {
+        type: RoomRequestType.CHAT,
+        msg: {
+          name: "test",
+          msg: "hi!"
+        }
+      },
+      assertions: (run) => {
+        const { room, events } = run();
+        expect(room.room.chats).toEqual(
+          [
+            {
+              name: "test",
+              msg: "hi!"
+            }
+          ]
+        );
+        expect(events).toEqual(
+          [
+            {
+              type: "chat",
+              msg: {
+                name: "test",
+                msg: "hi!"
+              }
+            }
+          ]
+        )
+      }
+    });
+  });
+
+});
+
 // integration //
 
 describe('simulated play through', () => {
@@ -614,6 +657,16 @@ describe('simulated play through', () => {
     }
   }
 
+  function chat(player: string, msg: string): ChatRequest {
+    return {
+      type: RoomRequestType.CHAT,
+      msg: {
+        name: player,
+        msg: msg
+      }
+    }
+  }
+
   it('complex case', () => {
     const server = RoomServer.newRoom("123");
 
@@ -628,25 +681,24 @@ describe('simulated play through', () => {
 
     server.handleRequest(gameStart(), testSender);
 
+    server.handleRequest(chat('test', 'hi!'), testSender);
+    server.handleRequest(chat('test2', 'hi too!'), test2Sender);
+
     const playerA = server.game.game.players[0];
     const playerB = server.game.game.players[1];
 
+    const wrongAnswer = [...server.game.game.answer].map((v,idx)=>idx===3?-v:v);
     server.handleRequest(
-      guess(
-        playerA,
-        [...server.game.game.answer].map((v,idx)=>idx===3?-v:v)
-      ),
+      guess(playerA, wrongAnswer),
       {
         type: SenderType.PLAYER,
         player: playerA
       }
     );
 
+    const rightAnswer = [...server.game.game.answer];
     server.handleRequest(
-      guess(
-        playerB,
-        [...server.game.game.answer]
-      ),
+      guess(playerB, rightAnswer),
       {
         type: SenderType.PLAYER,
         player: playerB
