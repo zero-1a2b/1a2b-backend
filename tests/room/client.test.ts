@@ -13,12 +13,12 @@ import { RoomState } from '../../src/room/logic/room';
 
 const joinEvent: PlayerJoinEvent = {
   type: RoomEventType.PLAYER_JOIN,
-  name: 'test'
+  player: 'test'
 };
 
 const readyEvent: PlayerReadyEvent = {
   type: RoomEventType.PLAYER_READY,
-  name: 'test'
+  player: 'test'
 };
 
 const startedEvent: GameStartedEvent = {

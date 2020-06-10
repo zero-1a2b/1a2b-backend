@@ -127,7 +127,7 @@ describe('RoomServer eventing works', () => {
 
     server.acceptEvent({
       type: RoomEventType.PLAYER_READY,
-      name: 'test2'
+      player: 'test2'
     });
 
     expect(server.room.playerReady.get("test2")).toEqual(true);
@@ -141,12 +141,12 @@ describe('RoomServer eventing works', () => {
 
 const joinEvent: PlayerJoinEvent = {
   type: RoomEventType.PLAYER_JOIN,
-  name: 'test'
+  player: 'test'
 };
 
 const readyEvent: PlayerReadyEvent = {
   type: RoomEventType.PLAYER_READY,
-  name: 'test'
+  player: 'test'
 };
 
 const startedEvent: GameStartedEvent = {
@@ -210,7 +210,7 @@ describe('Room handles PlayerConnect Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_JOIN,
-            name: 'a'
+            player: 'a'
           }
         ])
       }
@@ -224,7 +224,7 @@ describe('Room handles PlayerConnect Correctly', () => {
       ],
       request: {
         type: RoomRequestType.CONNECT,
-        player: joinEvent.name
+        player: joinEvent.player
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
@@ -242,7 +242,7 @@ describe('Room handles PlayerConnect Correctly', () => {
       ],
       request: {
         type: RoomRequestType.CONNECT,
-        player: joinEvent.name
+        player: joinEvent.player
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
@@ -280,7 +280,7 @@ describe('Room handles PlayerDisconnect Correctly', () => {
       ],
       request: {
         type: RoomRequestType.DISCONNECT,
-        player: joinEvent.name
+        player: joinEvent.player
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
@@ -289,7 +289,7 @@ describe('Room handles PlayerDisconnect Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_LEFT,
-            name: 'test'
+            player: 'test'
           }
         ])
       }
@@ -305,7 +305,7 @@ describe('Room handles PlayerDisconnect Correctly', () => {
       ],
       request: {
         type: RoomRequestType.DISCONNECT,
-        player: joinEvent.name
+        player: joinEvent.player
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
@@ -314,7 +314,7 @@ describe('Room handles PlayerDisconnect Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_LEFT,
-            name: 'test'
+            player: 'test'
           }
         ])
       }
@@ -332,7 +332,7 @@ describe('Room handles PlayerReady Correctly', () => {
       ],
       request: {
         type: RoomRequestType.READY,
-        player: joinEvent.name
+        player: joinEvent.player
       },
       assertions: (run) => {
         const { room, events } = run();
@@ -340,7 +340,7 @@ describe('Room handles PlayerReady Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_READY,
-            name: joinEvent.name
+            player: joinEvent.player
           }
         ])
       }
@@ -391,7 +391,7 @@ describe('Room handles PlayerUnready Correctly', () => {
       ],
       request: {
         type: RoomRequestType.UNREADY,
-        player: joinEvent.name
+        player: joinEvent.player
       },
       assertions: (run) => {
         const { room, events } = run();
@@ -399,7 +399,7 @@ describe('Room handles PlayerUnready Correctly', () => {
         expect(events).toEqual([
           {
             type: RoomEventType.PLAYER_UNREADY,
-            name: joinEvent.name
+            player: joinEvent.player
           }
         ])
       }

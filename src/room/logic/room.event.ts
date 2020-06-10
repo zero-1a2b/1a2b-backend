@@ -64,8 +64,6 @@ export interface RoomClosedEvent extends RoomEvent {
 
   readonly type: RoomEventType.ROOM_CLOSED;
 
-  readonly reason: 'game_finished' | 'server_terminated';
-
 }
 
 
@@ -73,7 +71,7 @@ export interface PlayerJoinEvent extends RoomEvent {
 
     readonly type: RoomEventType.PLAYER_JOIN;
 
-    readonly name: string;
+    readonly player: string;
 
 }
 
@@ -81,7 +79,7 @@ export interface PlayerLeftEvent extends RoomEvent {
 
     readonly type: RoomEventType.PLAYER_LEFT;
 
-    readonly name: string;
+    readonly player: string;
 
 }
 
@@ -100,7 +98,7 @@ export interface PlayerReadyEvent extends RoomEvent {
 
     readonly type: RoomEventType.PLAYER_READY;
 
-    readonly name: string;
+    readonly player: string;
 
 }
 
@@ -108,7 +106,7 @@ export interface PlayerUnreadyEvent extends RoomEvent {
 
     readonly type: RoomEventType.PLAYER_UNREADY;
 
-    readonly name: string;
+    readonly player: string;
 
 }
 

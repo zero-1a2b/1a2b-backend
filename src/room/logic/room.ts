@@ -85,14 +85,14 @@ export class Room {
 
   private handlePlayerJoinEvent(e: PlayerJoinEvent): Room {
     return this.setPlayerStates(
-      [...this.playerIDs, e.name],
-      this.playerReady.set(e.name, false),
+      [...this.playerIDs, e.player],
+      this.playerReady.set(e.player, false),
     );
   }
 
   private handlePlayerLeftEvent(e: PlayerLeftEvent): Room {
-    const result = filter(this.playerIDs, v =>v != e.name);
-    this.playerReady.delete(e.name);
+    const result = filter(this.playerIDs, v =>v != e.player);
+    this.playerReady.delete(e.player);
     return this.setPlayerStates(
       result,
       this.playerReady
@@ -111,14 +111,14 @@ export class Room {
   private handlePlayerReadyEvent(e: PlayerReadyEvent): Room {
     return this.setPlayerStates(
       this.playerIDs,
-      this.playerReady.set(e.name, true)
+      this.playerReady.set(e.player, true)
     );
   }
 
   private handlePlayerUnreadyEvent(e: PlayerUnreadyEvent): Room {
     return this.setPlayerStates(
       this.playerIDs,
-      this.playerReady.set(e.name, false)
+      this.playerReady.set(e.player, false)
     );
   }
 

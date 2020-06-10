@@ -121,8 +121,7 @@ export class RoomServer {
       this._game = null;
     }
     this.acceptAndSendEvent({
-      type: RoomEventType.ROOM_CLOSED,
-      reason: 'server_terminated'
+      type: RoomEventType.ROOM_CLOSED
     });
   }
 
@@ -180,7 +179,7 @@ export class RoomServer {
       }
       return {
         type: RoomEventType.PLAYER_JOIN,
-        name: req.player
+        player: req.player
       };
     } else {
       //playing state
@@ -200,7 +199,7 @@ export class RoomServer {
     }
     return {
       type: RoomEventType.PLAYER_LEFT,
-      name: req.player
+      player: req.player
     };
   }
 
@@ -215,7 +214,7 @@ export class RoomServer {
       }
       return {
         type: RoomEventType.PLAYER_READY,
-        name: req.player
+        player: req.player
       };
     }
   }
@@ -231,7 +230,7 @@ export class RoomServer {
       }
       return {
         type: RoomEventType.PLAYER_UNREADY,
-        name: req.player
+        player: req.player
       };
     }
   }
@@ -264,8 +263,7 @@ export class RoomServer {
             type: RoomEventType.GAME_FINISHED
           },
           {
-            type: RoomEventType.ROOM_CLOSED,
-            reason: 'game_finished'
+            type: RoomEventType.ROOM_CLOSED
           }
         ];
       } else {

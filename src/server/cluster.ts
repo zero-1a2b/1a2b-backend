@@ -15,7 +15,7 @@ export class RootServers {
 
     private server: Server;
 
-    private rooms: Map<string, RootServer>
+    private rooms: Map<string, RootServer>;
 
     private cors = require('@koa/cors');
 
@@ -150,7 +150,7 @@ export class RootServers {
             if(v.isDone()) {
                 toGC.push(k);
             }
-        })
+        });
         toGC.forEach(v=>{this.rooms.get(v).close();this.rooms.delete(v);});
     }
 

@@ -26,12 +26,12 @@ const room = Room.fromNewRoomEvent(
 
 const joinEvent: PlayerJoinEvent = {
   type: RoomEventType.PLAYER_JOIN,
-  name: 'test'
+  player: 'test'
 };
 
 const readyEvent: PlayerReadyEvent = {
   type: RoomEventType.PLAYER_READY,
-  name: 'test'
+  player: 'test'
 };
 
 const startedEvent: GameStartedEvent = {
@@ -113,12 +113,12 @@ describe('Room handles event correctly', () => {
 
     const joinEvent2: PlayerJoinEvent = {
       type: RoomEventType.PLAYER_JOIN,
-      name: 'test2'
+      player: 'test2'
     };
 
     const leftEvent: PlayerLeftEvent = {
       type: RoomEventType.PLAYER_LEFT,
-      name: 'test'
+      player: 'test'
     };
 
     const preRoom = room.handleEvent(joinEvent).handleEvent(joinEvent2);
@@ -159,7 +159,7 @@ describe('Room handles event correctly', () => {
 
     const unreadyEvent: PlayerUnreadyEvent = {
       type: RoomEventType.PLAYER_UNREADY,
-      name: 'test'
+      player: 'test'
     };
 
     const preRoom = room.handleEvent(joinEvent).handleEvent(readyEvent);
