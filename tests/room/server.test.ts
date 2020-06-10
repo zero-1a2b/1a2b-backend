@@ -149,6 +149,11 @@ const readyEvent: PlayerReadyEvent = {
   player: 'test'
 };
 
+const join2Event: PlayerJoinEvent = {
+  type: RoomEventType.PLAYER_JOIN,
+  player: 'test2'
+};
+
 const startedEvent: GameStartedEvent = {
   type: RoomEventType.GAME_STARTED,
   event: {
@@ -238,7 +243,7 @@ describe('Room handles PlayerConnect Correctly', () => {
       prevEvent: [
         joinEvent,
         readyEvent,
-        startedEvent
+        joinEvent
       ],
       request: {
         type: RoomRequestType.CONNECT,
@@ -463,6 +468,22 @@ describe('Room handles GameStarted Correctly', () => {
         joinEvent,
         readyEvent,
         startedEvent
+      ],
+      request: {
+        type: RoomRequestType.START
+      },
+      assertions: (run) => {
+        expect(run).toThrow();
+      }
+    });
+  });
+
+  it('rejects on not all prepared', () => {
+    testRequest<GameStartRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        join2Event
       ],
       request: {
         type: RoomRequestType.START

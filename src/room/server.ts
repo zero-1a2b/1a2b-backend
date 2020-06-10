@@ -26,7 +26,8 @@ import { mapToClient, NewServerGameEvent, NormalGameEvent } from '../game/logic/
 import { GameServer } from '../game/server';
 import { newServerGameEvent } from '../game/logic/server-game';
 import * as perm from '../util/sender';
-import { RequestSender, SenderType } from '../util/sender';
+import { assertTrue, RequestSender, SenderType } from '../util/sender';
+import { reduce } from 'lodash';
 
 
 export class RoomServer {
@@ -237,11 +238,16 @@ export class RoomServer {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private handleGameStart(_req: GameStartRequest, sender: RequestSender): GameStartedEvent {
-    //TODO: this is to please typescript
-    sender.type;
+    assertTrue(sender!=undefined); //anyone can start the game
     if(this.room.state != RoomState.IDLE) {
       throw new Error("error.already_started");
     }
+
+    const allReady = reduce(this.room.playerReady.values(), (acc,val)=>acc&&val);
+    if(!allReady) {
+      throw new Error("error.not_all_prepared");
+    }
+
     return {
       type: RoomEventType.GAME_STARTED,
       event: newServerGameEvent(
