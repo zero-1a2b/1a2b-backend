@@ -197,11 +197,6 @@ describe('GameServer lifecycle functions works', () => {
     expect(() => game.stop()).not.toThrow();
   });
 
-  it('rejects stop before start', () => {
-    const server = newGameServer();
-    expect(() => server.stop()).toThrow();
-  });
-
   it('rejects start after stop', () => {
     const server = newGameServer();
     server.start();

@@ -14,14 +14,6 @@ import {
 } from './room.event';
 import { Game, GameConfig } from '../../game/logic/game';
 import { filter, map } from 'lodash';
-import {
-  GameStartRequest,
-  PlayerConnectRequest,
-  PlayerDisconnectRequest,
-  PlayerReadyRequest,
-  PlayerUnreadyRequest, RoomRequest, RoomRequestType,
-} from './room.request';
-import { newServerGameEvent } from '../../game/logic/server-game';
 
 
 export enum RoomState {
@@ -51,101 +43,6 @@ export class Room {
     readonly playerReady: Map<string, boolean>,
     readonly gameConfig: GameConfig,
   ) {}
-
-
-  handleRequest(req: RoomRequest): NormalRoomEvent | Error | null {
-    switch (req.type) {
-      case RoomRequestType.CONNECT:
-        return this.handlePlayerConnect(req as PlayerConnectRequest);
-      case RoomRequestType.DISCONNECT:
-        return this.handlePlayerDisconnect(req as PlayerDisconnectRequest);
-      case RoomRequestType.READY:
-        return this.handlePlayerReady(req as PlayerReadyRequest);
-      case RoomRequestType.UNREADY:
-        return this.handlePlayerUnready(req as PlayerUnreadyRequest);
-      case RoomRequestType.START:
-        return this.handleGameStart(req as GameStartRequest);
-      case RoomRequestType.GAME:
-        throw new Error("the game's own state does not handle game's request!");
-    }
-  }
-
-  private handlePlayerConnect(req: PlayerConnectRequest): PlayerJoinEvent | Error | null {
-    if(this.state === RoomState.IDLE) {
-      // still in room state
-      if(this.playerIDs.findIndex(v=>v===req.player) != -1) {
-        return new Error("error.name_repeated");
-      }
-      return {
-        type: RoomEventType.PLAYER_JOIN,
-        name: req.player
-      }
-    } else {
-      //playing state
-      if(this.playerIDs.findIndex(v=>v===req.player) == -1) {
-        return new Error("error.not_playing_player");
-      } else {
-        return null;
-      }
-    }
-  }
-
-  private handlePlayerDisconnect(req: PlayerDisconnectRequest): PlayerLeftEvent | Error | null {
-    if(this.state === RoomState.IDLE) {
-      // still in room state
-      return {
-        type: RoomEventType.PLAYER_LEFT,
-        name: req.player
-      }
-    } else {
-      //playing state
-      //do nothing
-      return null;
-    }
-  }
-
-  private handlePlayerReady(req: PlayerReadyRequest): PlayerReadyEvent | Error {
-    if(this.state !== RoomState.IDLE) {
-      return new Error("error.game_already_started");
-    } else {
-      if(this.playerIDs.findIndex(v=>v===req.player) === -1) {
-        return new Error("error.player_not_exists");
-      }
-      return {
-        type: RoomEventType.PLAYER_READY,
-        name: req.player
-      }
-    }
-  }
-
-  private handlePlayerUnready(req: PlayerUnreadyRequest): PlayerUnreadyEvent | Error {
-    if(this.state !== RoomState.IDLE) {
-      return new Error("error.game_already_started");
-    } else {
-      if(this.playerIDs.findIndex(v=>v===req.player) === -1) {
-        return new Error("error.player_not_exists");
-      }
-      return {
-        type: RoomEventType.PLAYER_UNREADY,
-        name: req.player
-      }
-    }
-  }
-
-  private handleGameStart(req: GameStartRequest): GameStartedEvent | Error {
-    //FIXME: this is to please typescript
-    req.type;
-    if(this.state != RoomState.IDLE) {
-      return new Error("error.already_started");
-    }
-    return {
-      type: RoomEventType.GAME_STARTED,
-      event: newServerGameEvent(
-        this.playerIDs,
-        this.gameConfig
-      )
-    }
-  }
 
 
   handleEvent(event: NormalRoomEvent): Room {
@@ -237,6 +134,7 @@ export class Room {
     return this.setRoomState(RoomState.FINISHED);
   }
 
+  // mutator to eliminate update boilerplate
 
   private setRoomState(state: RoomState): Room {
     return new Room(

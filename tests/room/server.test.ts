@@ -4,11 +4,18 @@ import {
   GameRequest,
   GameStartRequest,
   PlayerConnectRequest, PlayerDisconnectRequest,
-  PlayerReadyRequest,
+  PlayerReadyRequest, PlayerUnreadyRequest, RoomRequest,
   RoomRequestType,
 } from '../../src/room/logic/room.request';
-import { GameStartedEvent, RoomClosedEvent, RoomEventType, RoomGameEvent } from '../../src/room/logic/room.event';
+import {
+  GameStartedEvent, NormalRoomEvent, PlayerJoinEvent,
+  PlayerReadyEvent,
+  RoomClosedEvent,
+  RoomEventType,
+  RoomGameEvent,
+} from '../../src/room/logic/room.event';
 import { GuessRequest, ServerGameRequestType, TimeoutRequest } from '../../src/game/logic/server-game.request';
+import { Game } from '../../src/game/logic/game';
 
 
 const connectRequest: PlayerConnectRequest = {
@@ -96,6 +103,8 @@ describe('RoomServer eventing works', () => {
 
     expect(recvClient).toBe(true);
     expect(recvServer).toBe(true);
+
+    server.close();
   });
 
   it('emit client maps correctly', () => {
@@ -108,6 +117,8 @@ describe('RoomServer eventing works', () => {
     server.handleRequest(startRequest);
 
     expect(recvClient.event.type).toBe(GameEventType.NEW_GAME_CLIENT);
+
+    server.close();
   });
 
   it('emit forwards game correctly', () => {
@@ -130,6 +141,8 @@ describe('RoomServer eventing works', () => {
     server.handleRequest(req);
 
     expect(recvClient.event.type).toBe(GameEventType.GUESS);
+
+    server.close();
   });
 
   it('accept works', () => {
@@ -145,6 +158,8 @@ describe('RoomServer eventing works', () => {
     });
 
     expect(server.room.playerReady.get("test2")).toEqual(true);
+
+    server.close();
   });
 
   it('accept forwards to game', () => {
@@ -166,9 +181,366 @@ describe('RoomServer eventing works', () => {
     server.handleRequest(req);
 
     expect(server.game.game.guesser).toEqual(1);
+
+    server.close();
   });
 
 });
+
+// request //
+
+const joinEvent: PlayerJoinEvent = {
+  type: RoomEventType.PLAYER_JOIN,
+  name: 'test'
+};
+
+const readyEvent: PlayerReadyEvent = {
+  type: RoomEventType.PLAYER_READY,
+  name: 'test'
+};
+
+const startedEvent: GameStartedEvent = {
+  type: RoomEventType.GAME_STARTED,
+  event: {
+    type: GameEventType.NEW_GAME_SERVER,
+    config: Game.DEFAULT_GAME_CONFIG,
+    players: ['test'],
+    answer: [1,2,3,4]
+  }
+};
+
+
+// noinspection JSUnusedLocalSymbols
+type testOp = () => { room: RoomServer, events: Array<NormalRoomEvent> };
+
+interface TestRequestTemplate<Request extends RoomRequest> {
+
+  prevEvent: Array<NormalRoomEvent>;
+
+  request: Request;
+
+  assertions: (testOp) => void;
+
+}
+
+function testRequest<Request extends RoomRequest>(template: TestRequestTemplate<Request>): void {
+  const room = RoomServer.newRoom("123");
+  template.prevEvent.forEach(v=>room.acceptEvent(v));
+
+  template.assertions(()=>{
+    const events = [];
+    const sub = room.events.subscribe(v=>events.push(v));
+    room.handleRequest(template.request);
+    sub.unsubscribe();
+    return {
+      room: room,
+      events: events
+    };
+  });
+
+  room.close();
+}
+
+
+describe('Room handles PlayerConnect Correctly', () => {
+
+  it('accepts new player on idle state', () => {
+    testRequest<PlayerConnectRequest>({
+      prevEvent: [],
+      request: {
+        type: RoomRequestType.CONNECT,
+        player: 'a'
+      },
+      assertions: (run) => {
+        const { room, events } = run();
+        expect(room.room.playerIDs).toEqual(['a']);
+        expect(events).toEqual([
+          {
+            type: RoomEventType.PLAYER_JOIN,
+            name: 'a'
+          }
+        ])
+      }
+    });
+  });
+
+  it('rejects repeated player on idle state', () => {
+    testRequest<PlayerConnectRequest>({
+      prevEvent: [
+        joinEvent
+      ],
+      request: {
+        type: RoomRequestType.CONNECT,
+        player: joinEvent.name
+      },
+      assertions: (run) => {
+        expect(run).toThrow();
+      }
+    });
+  });
+
+  it('accepts old player on playing state', () => {
+    testRequest<PlayerConnectRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent
+      ],
+      request: {
+        type: RoomRequestType.CONNECT,
+        player: joinEvent.name
+      },
+      assertions: (run) => {
+        expect(run).not.toThrow();
+      }
+    });
+  });
+
+  it('rejects new player on playing state', () => {
+    testRequest<PlayerConnectRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent
+      ],
+      request: {
+        type: RoomRequestType.CONNECT,
+        player: 'a'
+      },
+      assertions: (run) => {
+        expect(run).toThrow();
+      }
+    });
+  });
+
+});
+
+describe('Room handles PlayerDisconnect Correctly', () => {
+
+  it('removes player on idle state', () => {
+    testRequest<PlayerDisconnectRequest>({
+      prevEvent: [
+        joinEvent,
+      ],
+      request: {
+        type: RoomRequestType.DISCONNECT,
+        player: joinEvent.name
+      },
+      assertions: (run) => {
+        const { room, events } = run();
+        expect(room.room.playerIDs).toEqual([]);
+        expect(events).toEqual([
+          {
+            type: RoomEventType.PLAYER_LEFT,
+            name: 'test'
+          }
+        ])
+      }
+    });
+  });
+
+  it('removes old player from room on playing state', () => {
+    testRequest<PlayerDisconnectRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent
+      ],
+      request: {
+        type: RoomRequestType.DISCONNECT,
+        player: joinEvent.name
+      },
+      assertions: (run) => {
+        const { room, events } = run();
+        expect(room.room.playerIDs).toEqual([]);
+        expect(events).toEqual([
+          {
+            type: RoomEventType.PLAYER_LEFT,
+            name: 'test'
+          }
+        ])
+      }
+    });
+  });
+
+});
+
+describe('Room handles PlayerReady Correctly', () => {
+
+  it('works', () => {
+    testRequest<PlayerReadyRequest>({
+      prevEvent: [
+        joinEvent
+      ],
+      request: {
+        type: RoomRequestType.READY,
+        player: joinEvent.name
+      },
+      assertions: (run) => {
+        const { room, events } = run();
+        expect(room.room.playerReady).toEqual(new Map([['test', true]]));
+        expect(events).toEqual([
+          {
+            type: RoomEventType.PLAYER_READY,
+            name: joinEvent.name
+          }
+        ])
+      }
+    });
+  });
+
+  it('rejects not existing player', () => {
+    testRequest<PlayerReadyRequest>({
+      prevEvent: [
+        joinEvent
+      ],
+      request: {
+        type: RoomRequestType.READY,
+        player: 'test0'
+      },
+      assertions: (run) => {
+        expect(run).toThrow();
+      }
+    });
+  });
+
+  it('rejects already playing game', () => {
+    testRequest<PlayerReadyRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent
+      ],
+      request: {
+        type: RoomRequestType.READY,
+        player: 'test0'
+      },
+      assertions: (run) => {
+        expect(run).toThrow();
+      }
+    });
+  });
+
+});
+
+describe('Room handles PlayerUnready Correctly', () => {
+
+  it('works', () => {
+    testRequest<PlayerUnreadyRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent
+      ],
+      request: {
+        type: RoomRequestType.UNREADY,
+        player: joinEvent.name
+      },
+      assertions: (run) => {
+        const { room, events } = run();
+        expect(room.room.playerReady).toEqual(new Map([['test', false]]));
+        expect(events).toEqual([
+          {
+            type: RoomEventType.PLAYER_UNREADY,
+            name: joinEvent.name
+          }
+        ])
+      }
+    });
+  });
+
+  it('rejects not existing player', () => {
+    testRequest<PlayerUnreadyRequest>({
+      prevEvent: [],
+      request: {
+        type: RoomRequestType.UNREADY,
+        player: 'test0'
+      },
+      assertions: (run) => {
+        expect(run).toThrow();
+      }
+    });
+  });
+
+  it('rejects already playing game', () => {
+    testRequest<PlayerUnreadyRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent
+      ],
+      request: {
+        type: RoomRequestType.UNREADY,
+        player: 'test'
+      },
+      assertions: (run) => {
+        expect(run).toThrow();
+      }
+    });
+  });
+
+});
+
+describe('Room handles GameStarted Correctly', () => {
+
+  it('works', () => {
+    testRequest<GameStartRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent
+      ],
+      request: {
+        type: RoomRequestType.START
+      },
+      assertions: (run) => {
+        const { room, events } = run();
+        expect(room.game).not.toBeNull();
+        expect(events[0].type).toEqual(RoomEventType.GAME_STARTED);
+      }
+    });
+  });
+
+  it('rejects on started game', () => {
+    testRequest<GameStartRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent
+      ],
+      request: {
+        type: RoomRequestType.START
+      },
+      assertions: (run) => {
+        expect(run).toThrow();
+      }
+    });
+  });
+
+});
+
+describe('Room handles GameRequest', () => {
+
+  it('works', () => {
+    testRequest<GameRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent
+      ],
+      request: {
+        type: RoomRequestType.GAME,
+        request: {
+          type: ServerGameRequestType.TIMEOUT
+        }
+      },
+      assertions: (run) => {
+        expect(run).not.toThrow();
+      }
+    });
+  });
+
+});
+
+// integration //
 
 describe('simulated play through', () => {
 

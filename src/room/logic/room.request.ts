@@ -7,7 +7,8 @@ export enum RoomRequestType {
   READY = "ready",
   UNREADY = "unready",
   START = "start",
-  GAME = "game"
+  GAME = "game",
+  CHAT = "chat"
 }
 
 export interface RoomRequest {
@@ -61,4 +62,13 @@ export interface GameRequest extends RoomRequest {
   request: ServerGameRequest;
 
 }
+
+export interface ChatRequest extends RoomRequest {
+
+  type: RoomRequestType.CHAT;
+
+  msg: string;
+
+}
+
 

@@ -84,11 +84,10 @@ export class GameServer {
                 this._state = GameState.FINISHED;
             }
                 break;
+            case GameState.READY:
             case GameState.FINISHED:
                 //trivially success
                 break;
-            default:
-                throw new Error(`unexpected game state ${this._state}, expecting ${GameState.RUNNING}`);
         }
     }
 

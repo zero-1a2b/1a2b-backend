@@ -16,7 +16,9 @@ export enum RoomEventType {
 
     GAME_STARTED = "game_started",
     GAME_EVENT = "game",
-    GAME_FINISHED = "game_finished"
+    GAME_FINISHED = "game_finished",
+
+    CHAT = "chat"
 }
 
 export interface RoomEvent {
@@ -127,5 +129,14 @@ export interface RoomGameEvent extends RoomEvent {
 export interface GameFinishedEvent extends RoomEvent {
 
     readonly type: RoomEventType.GAME_FINISHED;
+
+}
+
+
+export interface ChatEvent extends RoomEvent {
+
+    readonly type: RoomEventType.CHAT;
+
+    readonly msg: string;
 
 }
