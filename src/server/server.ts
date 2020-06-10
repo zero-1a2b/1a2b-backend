@@ -1,6 +1,5 @@
 import { RoomServer} from '../room/server';
 import { NewRoomEvent, RoomEvent, RoomEventType } from '../room/logic/room.event';
-import * as Koa from 'koa';
 import * as ws from 'ws';
 import { PlayerConnectRequest, PlayerDisconnectRequest, RoomRequestType } from '../room/server.request';
 import { INTERNAL_SENDER, SenderType } from '../util/sender';
@@ -56,22 +55,22 @@ export class RootServer {
     }
 
 
-    onNewPlayerConnection(ctx: Koa.Context): void {
+    onNewPlayerConnection(socket: ws, player: string): void {
         const conn: PlayerConnectRequest = {
             type: RoomRequestType.CONNECT,
-            player: ctx.query.name
+            player: player
         };
         try {
             this.room.handleRequest(conn, INTERNAL_SENDER);
-            this.acceptPlayerConnection(ctx.websocket, ctx.query.name);
+            this.acceptPlayerConnection(socket, player);
         } catch (e) {
             const err: Error = e;
-            ctx.websocket.close(4000, err.message);
+            socket.close(4000, err.message);
         }
     }
 
-    onNewObserverConnection(ctx: Koa.Context): void {
-        this.acceptObserverConnection(ctx.websocket);
+  onNewObserverConnection(socket: ws): void {
+        this.acceptObserverConnection(socket);
     }
 
     private acceptPlayerConnection(conn: ws, name: string): void {
