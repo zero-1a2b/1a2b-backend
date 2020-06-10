@@ -88,8 +88,8 @@ describe('Game.handleEvent works', () => {
       answerLength: 4,
       playerTimeoutMillis: 1000
     }
-  }
-  const game: Game = Game.fromNewGameEvent(e)
+  };
+  const game: Game = Game.fromNewGameEvent(e);
 
   it('handles TimeoutEvent', () => {
 
@@ -104,8 +104,8 @@ describe('Game.handleEvent works', () => {
 
     const event2: TimeoutEvent = {
       type: GameEventType.TIMEOUT
-    }
-    const game3 = game2.handleEvent(event2)
+    };
+    const game3 = game2.handleEvent(event2);
 
     expect(game3.guesser).toEqual(0);
   });
