@@ -7,7 +7,7 @@ import {
   PlayerDisconnectRequest,
   PlayerReadyRequest,
   PlayerUnreadyRequest,
-  ServerRequest,
+  RoomServerRequest,
   RoomRequestType, ChatRequest,
 } from '../../src/room/server.request';
 import {
@@ -17,9 +17,8 @@ import {
   PlayerReadyEvent,
   RoomClosedEvent,
   RoomEventType,
-  RoomGameEvent,
 } from '../../src/room/logic/room.event';
-import { GuessRequest, ServerGameRequestType, TimeoutRequest } from '../../src/game/logic/server-game.request';
+import { GuessRequest, ServerGameRequestType } from '../../src/game/server.request';
 import { Game } from '../../src/game/logic/game';
 import { INTERNAL_SENDER, PlayerSender, RequestSender, SenderType } from '../../src/util/sender';
 
@@ -47,11 +46,6 @@ const readyRequest: PlayerReadyRequest = {
 
 const connect2Request: PlayerConnectRequest = {
   type: RoomRequestType.CONNECT,
-  player: 'test2'
-};
-
-const ready2Request: PlayerReadyRequest = {
-  type: RoomRequestType.READY,
   player: 'test2'
 };
 
@@ -124,44 +118,6 @@ describe('RoomServer eventing works', () => {
     server.close();
   });
 
-  it('emit client maps correctly', () => {
-    let recvClient: GameStartedEvent = null;
-    const server = RoomServer.newRoom("123");
-    server.clientEvents.subscribe(v=>v.type === RoomEventType.GAME_STARTED ? recvClient = v : null);
-
-    server.handleRequest(connectRequest, INTERNAL_SENDER);
-    server.handleRequest(readyRequest, testSender);
-    server.handleRequest(startRequest, testSender);
-
-    expect(recvClient.event.type).toBe(GameEventType.NEW_GAME_CLIENT);
-
-    server.close();
-  });
-
-  it('emit forwards game correctly', () => {
-    let recvClient: RoomGameEvent = null;
-    const server = RoomServer.newRoom("123");
-    server.clientEvents.subscribe(v=>v.type === RoomEventType.GAME_EVENT ? recvClient = v : null);
-
-    server.handleRequest(connectRequest, INTERNAL_SENDER);
-    server.handleRequest(readyRequest, testSender);
-    server.handleRequest(startRequest, testSender);
-    const r: GuessRequest = {
-      type: ServerGameRequestType.GUESS,
-      player: 'test',
-      guess: [1, 1, 1, 1]
-    };
-    const req: GameRequest = {
-      type: RoomRequestType.GAME,
-      request: r
-    };
-    server.handleRequest(req, testSender);
-
-    expect(recvClient.event.type).toBe(GameEventType.GUESS);
-
-    server.close();
-  });
-
   it('accept works', () => {
     const server = RoomServer.newRoom("123");
 
@@ -175,29 +131,6 @@ describe('RoomServer eventing works', () => {
     });
 
     expect(server.room.playerReady.get("test2")).toEqual(true);
-
-    server.close();
-  });
-
-  it('accept forwards to game', () => {
-    const server = RoomServer.newRoom("123");
-
-    server.handleRequest(connectRequest, INTERNAL_SENDER);
-    server.handleRequest(readyRequest, testSender);
-    server.handleRequest(connect2Request, INTERNAL_SENDER);
-    server.handleRequest(ready2Request, test2Sender);
-    server.handleRequest(startRequest, testSender);
-
-    const r: TimeoutRequest = {
-      type: ServerGameRequestType.TIMEOUT
-    };
-    const req: GameRequest = {
-      type: RoomRequestType.GAME,
-      request: r
-    };
-    server.handleRequest(req, testSender);
-
-    expect(server.game.game.guesser).toEqual(1);
 
     server.close();
   });
@@ -230,7 +163,7 @@ const startedEvent: GameStartedEvent = {
 // noinspection JSUnusedLocalSymbols
 type testOp = () => { room: RoomServer, events: Array<NormalRoomEvent> };
 
-interface TestRequestTemplate<Request extends ServerRequest> {
+interface TestRequestTemplate<Request extends RoomServerRequest> {
 
   prevEvent: Array<NormalRoomEvent>;
 
@@ -242,7 +175,7 @@ interface TestRequestTemplate<Request extends ServerRequest> {
 
 }
 
-function testRequest<Request extends ServerRequest>(template: TestRequestTemplate<Request>): void {
+function testRequest<Request extends RoomServerRequest>(template: TestRequestTemplate<Request>): void {
   const room = RoomServer.newRoom("123");
   template.prevEvent.forEach(v=>room.acceptEvent(v));
 
@@ -557,6 +490,7 @@ describe('Room handles GameRequest', () => {
           type: ServerGameRequestType.TIMEOUT
         }
       },
+      sender: INTERNAL_SENDER,
       assertions: (run) => {
         expect(run).not.toThrow();
       }

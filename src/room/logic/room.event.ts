@@ -1,4 +1,4 @@
-import { NormalEvent, NewServerGameEvent, NewClientGameEvent } from '../../game/logic/game.event';
+import { NormalGameEvent, NewServerGameEvent, NewClientGameEvent } from '../../game/logic/game.event';
 import { GameConfig } from '../../game/logic/game';
 import { ChatLine } from './room';
 
@@ -124,7 +124,7 @@ export interface RoomGameEvent extends RoomEvent {
 
     readonly type: RoomEventType.GAME_EVENT;
 
-    readonly event: NormalEvent;
+    readonly event: NormalGameEvent;
 
 }
 

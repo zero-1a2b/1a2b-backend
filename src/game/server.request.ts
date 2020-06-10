@@ -1,4 +1,4 @@
-import { Player } from './player';
+import { Player } from './logic/player';
 
 
 export enum ServerGameRequestType {
@@ -6,13 +6,13 @@ export enum ServerGameRequestType {
   TIMEOUT = "timeout"
 }
 
-export interface ServerGameRequest {
+export interface GameServerRequest {
 
   readonly type: ServerGameRequestType
 
 }
 
-export interface GuessRequest extends ServerGameRequest {
+export interface GuessRequest extends GameServerRequest {
 
   readonly type: ServerGameRequestType.GUESS;
 
@@ -22,7 +22,7 @@ export interface GuessRequest extends ServerGameRequest {
 
 }
 
-export interface TimeoutRequest extends ServerGameRequest {
+export interface TimeoutRequest extends GameServerRequest {
 
   readonly type: ServerGameRequestType.TIMEOUT;
 

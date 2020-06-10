@@ -1,4 +1,4 @@
-import { NewClientGameEvent, NormalEvent, GameEventType, GuessEvent } from './logic/game.event';
+import { NewClientGameEvent, NormalGameEvent, GameEventType, GuessEvent } from './logic/game.event';
 import { GameState } from './server';
 import { ClientGame } from './logic/client-game';
 
@@ -23,7 +23,7 @@ export class GameClient {
     }
 
 
-    acceptEvent(e: NormalEvent): void {
+    acceptEvent(e: NormalGameEvent): void {
         this._game = this._game.handleEvent(e);
         if(this._state === GameState.READY) {
             this._state = GameState.RUNNING;

@@ -53,9 +53,9 @@ export function mapToClient(server: NewServerGameEvent): NewClientGameEvent {
 }
 
 
-export type NormalEvent = TimeoutEvent | GuessEvent;
+export type NormalGameEvent = TimeoutEvent | GuessEvent;
 
-export function isNormalEvent(e: GameEvent): e is NormalEvent {
+export function isNormalEvent(e: GameEvent): e is NormalGameEvent {
   return e.type === GameEventType.GUESS || e.type === GameEventType.TIMEOUT;
 }
 

@@ -1,6 +1,17 @@
 import { GameServer, GameState } from '../../src/game/server';
-import { GameEvent, GameEventType, GuessEvent, NewServerGameEvent, NormalEvent } from '../../src/game/logic/game.event';
-import { GuessRequest, ServerGameRequestType } from '../../src/game/logic/server-game.request';
+import {
+  GameEvent,
+  GameEventType,
+  GuessEvent,
+  NewServerGameEvent,
+  NormalGameEvent
+} from '../../src/game/logic/game.event';
+import { GuessRequest, ServerGameRequestType } from '../../src/game/server.request';
+import { RequestSender, SenderType } from '../../src/util/sender';
+
+const aSender: RequestSender = { type: SenderType.PLAYER, player: 'a'};
+
+const bSender: RequestSender = { type: SenderType.PLAYER, player: 'b'};
 
 function newGameServer(): GameServer {
   return GameServer.newGame(
@@ -16,12 +27,25 @@ function newGameServer(): GameServer {
   );
 }
 
-function guess(game: GameServer, req: Omit<GuessRequest, 'type'>): void {
+function withGameSever(body: (server: GameServer)=>void): void {
+  const server = newGameServer();
+  server.start();
+  body(server);
+  server.stop();
+}
+
+function eventsCaptured(game: GameServer, body: (server: GameServer, events: Array<NormalGameEvent>)=>void): void {
+  const lastEvent = [];
+  game.events.subscribe(v=>lastEvent.push(v));
+  body(game, lastEvent);
+}
+
+function guess(game: GameServer, sender: RequestSender, req: Omit<GuessRequest, 'type'>): void {
   const e: GuessRequest = {
     type: ServerGameRequestType.GUESS,
     ...req,
   };
-  game.handleRequest(e);
+  game.handleRequest(e, sender);
 }
 
 describe('GameServer.newGame works', () => {
@@ -206,66 +230,104 @@ describe('GameServer lifecycle functions works', () => {
 
 });
 
-describe('GameServer command works', () => {
+describe('GameServer request works', () => {
 
-  it('makeGuess works', () => {
-    const game = newGameServer();
-    let lastEvent: NormalEvent;
-    game.events.subscribe(v => lastEvent = v);
+  it('guess works', () => {
+    withGameSever(game => {
+      eventsCaptured(game, (game, events) => {
 
-    game.start();
+        guess(game, aSender, { player: 'a', guess: [1, 2, 4, 3] });
 
-    guess(game, { player: 'a', guess: [1, 2, 4, 3] });
+        expect(game.game.guesser).toBe(1);
+        expect(events[events.length-1]).toEqual({
+          type: GameEventType.GUESS,
+          player: 'a',
+          guess: [1, 2, 4, 3],
+          a: 2,
+          b: 2,
+        });
 
-    expect(game.game.guesser).toBe(1);
-    const event: GuessEvent = lastEvent as GuessEvent;
-    expect(event).toEqual({
-      type: GameEventType.GUESS,
-      player: 'a',
-      guess: [1, 2, 4, 3],
-      a: 2,
-      b: 2,
+      });
     });
-
-    game.stop();
   });
 
-  it('makeGuess wins correctly', () => {
-    const game = newGameServer();
-    game.start();
+  it('guess wins correctly', () => {
+    withGameSever(game => {
 
-    guess(game, { player: 'a', guess: [1, 2, 3, 4] });
+      guess(game,  aSender, { player: 'a', guess: [1, 2, 3, 4] });
 
-    expect(game.game.winner).toBe('a');
+      expect(game.game.winner).toBe('a');
 
-    game.stop();
+    });
+  });
+
+  it('guess rejects not your turn', () => {
+    withGameSever(game=>{
+      const req: GuessRequest = {
+        type: ServerGameRequestType.GUESS,
+        player: 'b',
+        guess: [1,7,8,9]
+      };
+
+      expect(()=>game.handleRequest(req, bSender)).toThrow();
+    });
+
+  });
+
+  it('guess rejects invalid length', () => {
+    withGameSever(game=>{
+      const req: GuessRequest = {
+        type: ServerGameRequestType.GUESS,
+        player: 'a',
+        guess: [1,7,8]
+      };
+
+      expect(()=>game.handleRequest(req, aSender)).toThrow();
+    });
+  });
+
+  it('guess rejects finished game', () => {
+    withGameSever(game=>{
+      const req: GuessRequest = {
+        type: ServerGameRequestType.GUESS,
+        player: 'a',
+        guess: [1,2,3,4]
+      };
+      game.handleRequest(req, aSender);
+
+      const req2: GuessRequest = {
+        type: ServerGameRequestType.GUESS,
+        player: 'b',
+        guess: [1,2,3,4]
+      };
+      expect(()=>game.handleRequest(req2, aSender)).toThrow();
+
+    });
   });
 
   it('winning stops the game', () => {
-    const game = newGameServer();
-    game.start();
+    withGameSever(game=>{
 
-    guess(game, { player: 'a', guess: [1, 2, 3, 4], });
+      guess(game,  aSender, { player: 'a', guess: [1, 2, 3, 4], });
 
-    expect(game.state).toBe(GameState.FINISHED);
+      expect(game.state).toBe(GameState.FINISHED);
 
-    game.stop();
+    });
   });
 
   it('timeout works', () => {
     jest.useFakeTimers();
+    withGameSever(game=>{
 
-    const game = newGameServer();
-    game.start();
+      jest.runOnlyPendingTimers();
 
-    jest.runOnlyPendingTimers();
+      expect(game.game.guesser).toBe(1);
 
-    expect(game.game.guesser).toBe(1);
-
-    game.stop();
+    });
   });
 
 });
+
 
 describe('GameServer eventing works', () => {
 
@@ -276,7 +338,7 @@ describe('GameServer eventing works', () => {
     game.events.subscribe(v => called = v as GuessEvent);
     game.start();
 
-    guess(game, { player: 'a', guess: [1, 2, 4, 3] });
+    guess(game, aSender,{ player: 'a', guess: [1, 2, 4, 3] });
 
     expect(called.type).toEqual(GameEventType.GUESS);
 
@@ -308,8 +370,7 @@ describe('GameServer simulated playtesting', () => {
 
     game.start();
 
-    guess(game, { player: 'a', guess: [1, 2, 3, 5] });
-
+    guess(game, aSender, { player: 'a', guess: [1, 2, 3, 5] });
     expect(lastEvent).toEqual(
       {
         type: GameEventType.GUESS,
@@ -327,7 +388,7 @@ describe('GameServer simulated playtesting', () => {
       },
     );
 
-    guess(game, { player: 'a', guess: [1, 4, 3, 6] });
+    guess(game, aSender, { player: 'a', guess: [1, 4, 3, 6] });
     expect(lastEvent).toEqual(
       {
         type: GameEventType.GUESS,
@@ -338,7 +399,7 @@ describe('GameServer simulated playtesting', () => {
       },
     );
 
-    guess(game, { player: 'b', guess: [1, 2, 7, 4] });
+    guess(game, bSender,{ player: 'b', guess: [1, 2, 7, 4] });
     expect(lastEvent).toEqual(
       {
         type: GameEventType.GUESS,
@@ -349,7 +410,7 @@ describe('GameServer simulated playtesting', () => {
       },
     );
 
-    guess(game, { player: 'a', guess: [1, 2, 3, 4] });
+    guess(game, aSender, { player: 'a', guess: [1, 2, 3, 4] });
     expect(lastEvent).toEqual(
       {
         type: GameEventType.GUESS,

@@ -2,7 +2,7 @@ import { Player } from './player';
 import {
   GameEventType,
   NewGameEvent,
-  NormalEvent,
+  NormalGameEvent,
 } from './game.event';
 
 
@@ -56,7 +56,7 @@ export class Game {
     }
 
 
-    handleEvent(e: NormalEvent): Game {
+    handleEvent(e: NormalGameEvent): Game {
         switch (e.type) {
             case GameEventType.TIMEOUT: {
                 return new Game(

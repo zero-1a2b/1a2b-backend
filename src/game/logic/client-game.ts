@@ -1,4 +1,4 @@
-import { NewClientGameEvent, NormalEvent } from './game.event';
+import { NewClientGameEvent, NormalGameEvent } from './game.event';
 import { Game } from './game';
 
 export class ClientGame extends Game {
@@ -17,7 +17,7 @@ export class ClientGame extends Game {
   }
 
 
-  handleEvent(event: NormalEvent): ClientGame {
+  handleEvent(event: NormalGameEvent): ClientGame {
     return new ClientGame(
       this.game.handleEvent(event),
     );

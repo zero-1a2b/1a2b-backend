@@ -19,10 +19,10 @@ import {
   PlayerDisconnectRequest,
   PlayerReadyRequest,
   PlayerUnreadyRequest,
-  ServerRequest,
+  RoomServerRequest,
   RoomRequestType, ChatRequest,
 } from './server.request';
-import { mapToClient, NewServerGameEvent, NormalEvent } from '../game/logic/game.event';
+import { mapToClient, NewServerGameEvent, NormalGameEvent } from '../game/logic/game.event';
 import { GameServer } from '../game/server';
 import { newServerGameEvent } from '../game/logic/server-game';
 import * as perm from '../util/sender';
@@ -133,7 +133,7 @@ export class RoomServer {
    * @param req the request
    * @param sender send by who, string for player, null for system internal
    */
-  handleRequest(req: ServerRequest, sender: RequestSender): void {
+  handleRequest(req: RoomServerRequest, sender: RequestSender): void {
     let ret: Array<NormalRoomEvent> ;
     switch (req.type) {
       case RoomRequestType.CONNECT:
@@ -257,7 +257,7 @@ export class RoomServer {
     if(this._game === null) {
       throw new Error("error.game_not_started");
     } else {
-      this._game.handleRequest((req as GameRequest).request);
+      this._game.handleRequest(req.request, sender);
       if(this._game.game.winner !== undefined) {
         return [
           {
@@ -299,7 +299,7 @@ export class RoomServer {
   }
 
 
-  private onGameEvent(event: NormalEvent): void {
+  private onGameEvent(event: NormalGameEvent): void {
     this.sendEvent({
       type: RoomEventType.GAME_EVENT,
       event: event
