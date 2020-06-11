@@ -1,9 +1,10 @@
-import { ChatLine, Room } from './logic/room';
+import { ChatLine, Room, RoomConfig } from './logic/room';
 import { GameServerRequest } from '../game/server.request';
 import { ClientGame } from '../game/logic/client-game';
 
 
 export enum RoomRequestType {
+  CHANGE_SETTINGS = "setting",
   CONNECT = "connect",
   DISCONNECT = "disconnect",
   READY = "ready",
@@ -17,6 +18,14 @@ export enum RoomRequestType {
 export interface RoomServerRequest {
 
   type: RoomRequestType;
+
+}
+
+export interface ChangeSettingsRequest extends RoomServerRequest {
+
+  type: RoomRequestType.CHANGE_SETTINGS;
+
+  config: RoomConfig;
 
 }
 

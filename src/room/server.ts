@@ -1,6 +1,7 @@
 import { EventEmitter } from '../util/EventEmitter';
 import { Room, RoomState } from './logic/room';
 import {
+  ChangeSettingsEvent,
   ChatEvent,
   GameStartedEvent,
   NewRoomEvent,
@@ -13,14 +14,18 @@ import {
   RoomEventType,
 } from './logic/room.event';
 import {
+  ChangeSettingsRequest,
+  ChatRequest,
   GameRequest,
   GameStartRequest,
+  GetStateRequest,
+  GetStateResponse,
   PlayerConnectRequest,
   PlayerDisconnectRequest,
   PlayerReadyRequest,
   PlayerUnreadyRequest,
+  RoomRequestType,
   RoomServerRequest,
-  RoomRequestType, ChatRequest, GetStateRequest, GetStateResponse,
 } from './server.request';
 import { mapToClient, NewServerGameEvent, NormalGameEvent } from '../game/logic/game.event';
 import { GameServer } from '../game/server';
@@ -137,6 +142,9 @@ export class RoomServer {
     let events: Array<NormalRoomEvent>;
     let ret: object | null = null;
     switch (req.type) {
+      case RoomRequestType.CHANGE_SETTINGS:
+        events = this.wrap(this.handleChangeSettings(req as ChangeSettingsRequest, sender));
+        break;
       case RoomRequestType.CONNECT:
         events = this.wrap(this.handlePlayerConnect(req as PlayerConnectRequest, sender));
         break;
@@ -174,6 +182,17 @@ export class RoomServer {
     //apply events
     events.forEach(r=>this.acceptAndSendEvent(r));
     return ret;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private handleChangeSettings(req: ChangeSettingsRequest, _sender: RequestSender): ChangeSettingsEvent {
+    if (this.state!==RoomState.IDLE) {
+      throw new Error("error.game_already_started");
+    }
+    return {
+      type: RoomEventType.CHANGE_SETTINGS,
+      config: req.config
+    };
   }
 
   private handlePlayerConnect(req: PlayerConnectRequest, sender: RequestSender): PlayerJoinEvent | null {

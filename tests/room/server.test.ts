@@ -1,6 +1,7 @@
 import { RoomServer } from '../../src/room/server';
 import { GameEventType } from '../../src/game/logic/game.event';
 import {
+  ChangeSettingsRequest,
   ChatRequest,
   GameRequest,
   GameStartRequest,
@@ -202,6 +203,59 @@ function testRequest<Request extends RoomServerRequest>(template: TestRequestTem
   room.close();
 }
 
+
+describe('Room handles ChangeSettings Correctly', () => {
+
+  const request: ChangeSettingsRequest = {
+    type: RoomRequestType.CHANGE_SETTINGS,
+    config: {
+      maxPlayers:2,
+      game: Game.DEFAULT_GAME_CONFIG
+    }
+  };
+
+  it('works', () => {
+    testRequest<ChangeSettingsRequest>({
+      prevEvent: [],
+      request: request,
+      sender: INTERNAL_SENDER,
+      assertions: (run) => {
+        const { room, events } = run();
+        expect(room.room.config).toEqual(
+          {
+            maxPlayers:2,
+            game: Game.DEFAULT_GAME_CONFIG
+          }
+        );
+        expect(events).toEqual([
+          {
+            type: RoomEventType.CHANGE_SETTINGS,
+            config: {
+              maxPlayers:2,
+              game: Game.DEFAULT_GAME_CONFIG
+            }
+          }
+        ]);
+      },
+    });
+  });
+
+  it('rejects if game already started', () => {
+    testRequest<ChangeSettingsRequest>({
+      prevEvent: [
+        joinEvent,
+        readyEvent,
+        startedEvent
+      ],
+      request: request,
+      sender: INTERNAL_SENDER,
+      assertions: (run) => {
+        expect(run).toThrow();
+      },
+    });
+  });
+
+});
 
 describe('Room handles PlayerConnect Correctly', () => {
 
