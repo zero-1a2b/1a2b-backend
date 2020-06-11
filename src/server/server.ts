@@ -18,8 +18,9 @@ function closeOnErrorDefined(action: string, conn: ws): (e?: Error) => void {
 
 export class RootServer {
 
+  get room(): RoomServer { return this._room; }
 
-  private room: RoomServer | null;
+  private _room: RoomServer | null;
 
   private history: RoomEvent[];
 
@@ -31,24 +32,24 @@ export class RootServer {
   constructor(
     event: NewRoomEvent,
   ) {
-    this.room = new RoomServer(event);
+    this._room = new RoomServer(event);
     //connections
     this.playerConnections = new Set();
     this.observerConnections = new Set();
     //events
     this.history = [];
-    this.room.events.subscribe(e => e.type === RoomEventType.ROOM_CLOSED ? (this.onClose()) : null);
-    this.room.clientEvents.subscribe(e => this.saveAndDeliverPlayerEvent(e));
+    this._room.events.subscribe(e => e.type === RoomEventType.ROOM_CLOSED ? (this.onClose()) : null);
+    this._room.clientEvents.subscribe(e => this.saveAndDeliverPlayerEvent(e));
     //save the initial event
     this.saveAndDeliverPlayerEvent(event);
   }
 
   isClosed(): boolean {
-    return this.room === null;
+    return this._room === null;
   }
 
   close(): void {
-    this.room.close();
+    this._room.close();
   }
 
   /**
@@ -56,11 +57,18 @@ export class RootServer {
    *  close -> ask RoomServer to close -> close this shell
    */
   private onClose(): void {
-    this.room = null;
+    this._room = null;
     this.playerConnections.forEach(v => v.close(2020, 'status.room_closing'));
     this.observerConnections.forEach(v => v.close(2020, 'status.room_closing'));
   }
 
+  canConnect(player: string): boolean {
+    if(this._room !== null) {
+      return this._room.canConnect(player);
+    } else {
+      return false;
+    }
+  }
 
   onNewPlayerConnection(socket: ws, player: string): void {
     const conn: PlayerConnectRequest = {
@@ -68,7 +76,7 @@ export class RootServer {
       player: player,
     };
     try {
-      this.room.handleRequest(conn, INTERNAL_SENDER);
+      this._room.handleRequest(conn, INTERNAL_SENDER);
       this.acceptPlayerConnection(socket, player);
     } catch (e) {
       const err: Error = e;
@@ -83,12 +91,12 @@ export class RootServer {
   private acceptPlayerConnection(conn: ws, name: string): void {
     conn.addEventListener('message', (event) => {
       try {
-        log.debug(`room:[${this.room.room.id}] player:[${name}] processing player request: [${event.data}]`);
-        const ret = this.room.handleRequest(JSON.parse(event.data), { type: SenderType.PLAYER, player: name });
+        log.debug(`room:[${this._room.room.id}] player:[${name}] processing player request: [${event.data}]`);
+        const ret = this._room.handleRequest(JSON.parse(event.data), { type: SenderType.PLAYER, player: name });
         conn.send(JSON.stringify({ 'code': 'success', 'resp': ret }));
       } catch (e) {
         const err: Error = e;
-        log.debug(`room:[${this.room.room.id}] player:[${name}] error processing player request: ${err.name}:${err.message}\n${err.stack}`);
+        log.debug(`room:[${this._room.room.id}] player:[${name}] error processing player request: ${err.name}:${err.message}\n${err.stack}`);
         conn.send(JSON.stringify({ 'code': 'error', 'message': err.message }));
       }
     });
@@ -99,7 +107,7 @@ export class RootServer {
         type: RoomRequestType.DISCONNECT,
         player: name,
       };
-      this.room.handleRequest(left, INTERNAL_SENDER);
+      this._room.handleRequest(left, INTERNAL_SENDER);
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     conn.addEventListener('error', (_event) => {
@@ -108,9 +116,9 @@ export class RootServer {
         type: RoomRequestType.DISCONNECT,
         player: name,
       };
-      this.room.handleRequest(left, INTERNAL_SENDER);
+      this._room.handleRequest(left, INTERNAL_SENDER);
     });
-    log.debug(`room:[${this.room.room.id}] replaying ${this.history.length} events to player[${name}]`);
+    log.debug(`room:[${this._room.room.id}] replaying ${this.history.length} events to player[${name}]`);
     this.history.forEach(e => conn.send(JSON.stringify(e), closeOnErrorDefined('player-replay', conn)));
     this.playerConnections.add(conn);
   }
@@ -124,7 +132,7 @@ export class RootServer {
     conn.addEventListener('error', (_event) => {
       this.observerConnections.delete(conn);
     });
-    log.debug(`room:[${this.room.room.id}] replaying ${this.history.length} events to observer`);
+    log.debug(`room:[${this._room.room.id}] replaying ${this.history.length} events to observer`);
     this.history.forEach(e => conn.send(JSON.stringify(e), closeOnErrorDefined('observer-replay', conn)));
     this.observerConnections.add(conn);
   }

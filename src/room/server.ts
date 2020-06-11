@@ -31,7 +31,7 @@ import { mapToClient, NewServerGameEvent, NormalGameEvent } from '../game/logic/
 import { GameServer } from '../game/server';
 import { mapToClient as mapStateToClient, newServerGameEvent } from '../game/logic/server-game';
 import * as perm from '../util/sender';
-import { assertTrue, RequestSender, SenderType } from '../util/sender';
+import { assertTrue, INTERNAL_SENDER, RequestSender, SenderType } from '../util/sender';
 import * as _ from 'lodash';
 
 
@@ -132,6 +132,18 @@ export class RoomServer {
   }
 
   // operations for handling request
+
+  canConnect(player: string): boolean {
+    try {
+      this.handlePlayerConnect({
+        type: RoomRequestType.CONNECT,
+        player: player
+      }, INTERNAL_SENDER);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
   /**
    * handle request

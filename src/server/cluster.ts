@@ -91,12 +91,46 @@ export class RootServers {
     app.use(route.put('/rooms', ctx => {
       this.handleNewRoom(ctx);
     }));
+    app.use(route.get('/rooms/:id/config', (ctx, id) => {
+      this.handleGetRoomConfig(ctx, id);
+    }));
+    app.use(route.get('/rooms/:id/player/joinable', (ctx, id) => {
+      this.handleCanConnect(ctx, id);
+    }));
     app.ws.use(route.all('/rooms/:id/player', (ctx, id) => {
       this.newPlayerConnection(ctx, id);
     }));
     app.ws.use(route.all('/rooms/:id/observe', (ctx, id) => {
       this.newObserverConnection(ctx, id);
     }));
+  }
+
+  private handleGetRoomConfig(ctx: Koa.Context, id: string): void {
+    try {
+      if (!this.rooms.has(id)) {
+        ctx.throw(404);
+      } else {
+        ctx.body = this.rooms.get(id).room.room.config;
+      }
+    } catch (e) {
+      ctx.throw(e);
+    }
+  }
+
+  private handleCanConnect(ctx: Koa.Context, id: string): void {
+    try {
+      const name = ctx.query.name;
+      if(!(typeof name === 'string')) {
+        ctx.throw(400, 'error.name_not_provided');
+      }
+      if (!this.rooms.has(id)) {
+        ctx.throw(404, 'error.room_not_exists');
+      } else {
+        ctx.response.body = this.rooms.get(id).canConnect(name);
+      }
+    } catch (e) {
+      ctx.throw(e);
+    }
   }
 
   private handleNewRoom(ctx: Koa.Context): void {
@@ -112,6 +146,7 @@ export class RootServers {
   private newPlayerConnection(ctx: Koa.Context, id: string): void {
     try {
       const name = ctx.query.name;
+
       log.debug(`new player connection for room:[${id}] name:[${name}]`);
       ctx.websocket.on('close',(code, reason)=>{
         log.debug(`player connection for room:[${id}] name:[${name}] closed: ${code}:${reason}`)
@@ -119,6 +154,7 @@ export class RootServers {
       ctx.websocket.on('error',(error)=>{
         log.debug(`player connection for room:[${id}] name:[${name}] errored: ${error}`)
       });
+
       if(!(typeof name === 'string')) {
         ctx.websocket.close(4000, 'error.name_not_provided');
       }
