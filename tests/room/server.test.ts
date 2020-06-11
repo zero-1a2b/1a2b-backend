@@ -1,16 +1,19 @@
 import { RoomServer } from '../../src/room/server';
 import { GameEventType } from '../../src/game/logic/game.event';
 import {
+  ChatRequest,
   GameRequest,
   GameStartRequest,
+  GetStateRequest,
   PlayerConnectRequest,
   PlayerDisconnectRequest,
   PlayerReadyRequest,
   PlayerUnreadyRequest,
+  RoomRequestType,
   RoomServerRequest,
-  RoomRequestType, ChatRequest, GetStateRequest,
 } from '../../src/room/server.request';
 import {
+  ChangeSettingsEvent,
   GameStartedEvent,
   NormalRoomEvent,
   PlayerJoinEvent,
@@ -267,6 +270,31 @@ describe('Room handles PlayerConnect Correctly', () => {
       request: {
         type: RoomRequestType.CONNECT,
         player: 'a',
+      },
+      sender: INTERNAL_SENDER,
+      assertions: (run) => {
+        expect(run).toThrow();
+      },
+    });
+  });
+
+  it('rejects player on room full', () => {
+    const changeSettingsEvent: ChangeSettingsEvent = {
+      type: RoomEventType.CHANGE_SETTINGS,
+      config: {
+        maxPlayers: 1,
+        game: Game.DEFAULT_GAME_CONFIG
+      },
+    };
+    testRequest<PlayerConnectRequest>({
+      prevEvent: [
+        changeSettingsEvent,
+        joinEvent,
+        readyEvent
+      ],
+      request: {
+        type: RoomRequestType.CONNECT,
+        player: 'b',
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
@@ -589,12 +617,21 @@ describe('Room handles GetStateRequest', () => {
                 test: true
               },
               chats: [],
-              gameConfig: { answerLength: 4, playerTimeoutMillis: 60000 },
+              config: {
+                maxPlayers: 8,
+                game: {
+                  answerLength: 4,
+                  playerTimeoutMillis: 60000
+                }
+              },
             },
             game: {
               players: ['test'],
               guesser: 0,
-              config: { answerLength: 4, playerTimeoutMillis: 60000 }
+              config: {
+                answerLength: 4,
+                playerTimeoutMillis: 60000
+              }
             },
           },
         );

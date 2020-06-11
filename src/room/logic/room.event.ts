@@ -1,6 +1,5 @@
 import { NormalGameEvent, NewServerGameEvent, NewClientGameEvent } from '../../game/logic/game.event';
-import { GameConfig } from '../../game/logic/game';
-import { ChatLine } from './room';
+import { ChatLine, RoomConfig } from './room';
 
 
 export enum RoomEventType {
@@ -56,7 +55,7 @@ export interface ChangeSettingsEvent extends RoomEvent {
 
     readonly type: RoomEventType.CHANGE_SETTINGS;
 
-    readonly gameConfig: GameConfig;
+    readonly config: RoomConfig;
 
 }
 

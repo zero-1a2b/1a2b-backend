@@ -179,6 +179,10 @@ export class RoomServer {
   private handlePlayerConnect(req: PlayerConnectRequest, sender: RequestSender): PlayerJoinEvent | null {
     perm.assertInternalSender(sender);
 
+    if(this.room.playerIDs.length >= this.room.config.maxPlayers) {
+      throw new Error("error.room_full");
+    }
+
     if(this.room.state === RoomState.IDLE) {
       // still in room state
       if(this.room.playerIDs.findIndex(v=>v===req.player) != -1) {
@@ -258,7 +262,7 @@ export class RoomServer {
       type: RoomEventType.GAME_STARTED,
       event: newServerGameEvent(
         this.room.playerIDs,
-        this.room.gameConfig
+        this.room.config.game
       )
     };
   }
@@ -294,7 +298,7 @@ export class RoomServer {
         playerIDs: this.room.playerIDs,
         playerReady: ready,
         chats: this.room.chats,
-        gameConfig: this.room.gameConfig
+        config: this.room.config
       },
       game: this.game !== null ? mapStateToClient(this.game.game) : null
     }

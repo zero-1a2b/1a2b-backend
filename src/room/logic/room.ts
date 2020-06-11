@@ -16,6 +16,11 @@ import { Game, GameConfig } from '../../game/logic/game';
 import { filter, map } from 'lodash';
 
 
+export interface RoomConfig {
+  maxPlayers: number;
+  game: GameConfig;
+}
+
 export interface ChatLine {
   name: string,
   msg: string
@@ -30,6 +35,11 @@ export enum RoomState {
 
 export class Room {
 
+  static readonly DEFAULT_ROOM_CONFIG: RoomConfig = {
+    maxPlayers: 8,
+    game: Game.DEFAULT_GAME_CONFIG
+  };
+
   static fromNewRoomEvent(event: NewRoomEvent): Room {
     return new Room(
       event.id,
@@ -37,7 +47,7 @@ export class Room {
       [],
       new Map(),
       [],
-      Game.DEFAULT_GAME_CONFIG,
+      Room.DEFAULT_ROOM_CONFIG
     );
   }
 
@@ -48,7 +58,7 @@ export class Room {
     readonly playerIDs: string[],
     readonly playerReady: Map<string, boolean>,
     readonly chats: ChatLine[],
-    readonly gameConfig: GameConfig
+    readonly config: RoomConfig
   ) {}
 
 
@@ -80,7 +90,7 @@ export class Room {
   }
 
   private handleChangeSettingsEvent(e: ChangeSettingsEvent): Room {
-    return this.setGameConfig(e.gameConfig);
+    return this.setRoomConfig(e.config);
   }
 
   private handlePlayerJoinEvent(e: PlayerJoinEvent): Room {
@@ -143,7 +153,7 @@ export class Room {
       this.playerIDs,
       newReady,
       this.chats,
-      this.gameConfig,
+      this.config,
     );
   }
 
@@ -155,7 +165,7 @@ export class Room {
       this.playerIDs,
       this.playerReady,
       this.chats,
-      this.gameConfig,
+      this.config,
     );
   }
 
@@ -174,11 +184,11 @@ export class Room {
       this.playerIDs,
       this.playerReady,
       this.chats,
-      this.gameConfig,
+      this.config,
     );
   }
 
-  private setGameConfig(config: GameConfig): Room {
+  private setRoomConfig(config: RoomConfig): Room {
     return new Room(
       this.id,
       this.state,
@@ -196,7 +206,7 @@ export class Room {
       [...playerIDs],
       new Map(playerReady),
       this.chats,
-      this.gameConfig,
+      this.config,
     );
   }
 

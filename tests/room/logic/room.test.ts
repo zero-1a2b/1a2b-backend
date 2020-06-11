@@ -70,7 +70,7 @@ describe('Room.fromNewRoomEvent works', () => {
     expect(room.state).toEqual(RoomState.IDLE);
     expect(room.playerIDs).toEqual([]);
     expect(room.playerReady).toEqual(new Map());
-    expect(room.gameConfig).toEqual(Game.DEFAULT_GAME_CONFIG);
+    expect(room.config).toEqual(Room.DEFAULT_ROOM_CONFIG);
 
   });
 
@@ -81,19 +81,25 @@ describe('Room handles event correctly', () => {
   it('handles changeSettings', () => {
     const changeSettingsEvent: ChangeSettingsEvent = {
       type: RoomEventType.CHANGE_SETTINGS,
-      gameConfig: {
-        playerTimeoutMillis: 2000,
-        answerLength: 5
+      config: {
+        maxPlayers: 8,
+        game: {
+          playerTimeoutMillis: 2000,
+          answerLength: 5
+        }
       }
     };
 
     const preRoom = room;
     const afterRoom = preRoom.handleEvent(changeSettingsEvent);
 
-    expect(afterRoom.gameConfig).toEqual(
+    expect(afterRoom.config).toEqual(
       {
-        playerTimeoutMillis: 2000,
-        answerLength: 5
+        maxPlayers: 8,
+        game: {
+          playerTimeoutMillis: 2000,
+          answerLength: 5
+        }
       }
     );
 
