@@ -18,7 +18,7 @@ export class Game {
 
     static DEFAULT_GAME_CONFIG: GameConfig = {
         answerLength: 4,
-        playerTimeoutMillis: 60*1000
+        playerTimeoutMillis: 20*1000
     };
 
     static fromNewGameEvent(e: NewGameEvent): Game {
