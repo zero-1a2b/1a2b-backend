@@ -10,6 +10,7 @@ const log = getLogger('root-server-cluster');
 
 export interface RootServersGCConfig {
   scanIntervalMillis: number;
+  maxEmptyRoomIdleMillis: number;
   maxIdleMillis: number;
 }
 
@@ -23,7 +24,8 @@ export class RootServers {
   public static readonly DEFAULT_CONFIG: RootServersConfig = {
     gc: {
       scanIntervalMillis: 30*1000,
-      maxIdleMillis: 10*60*1000
+      maxEmptyRoomIdleMillis: 1*60*1000,
+      maxIdleMillis: 60*60*1000
     }
   };
 
@@ -108,7 +110,10 @@ export class RootServers {
     const now = moment();
     this.rooms.forEach((v, k) => {
       log.debug(`room: ${k}: ${now.diff(v.lastActive)}`);
-      if (now.diff(v.lastActive)>=this.config.gc.maxIdleMillis) {
+      const haveNobody = v.room.room.room.playerIDs.length === 0;
+      const isEmptyInactive = now.diff(v.lastActive)>=this.config.gc.maxEmptyRoomIdleMillis;
+      const isMaxInactive = now.diff(v.lastActive)>=this.config.gc.maxIdleMillis;
+      if ((haveNobody && isEmptyInactive)||((!haveNobody)&& isMaxInactive)) {
         toGC.push(k);
       }
     });
