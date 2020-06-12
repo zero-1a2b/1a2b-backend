@@ -22,9 +22,10 @@ import {
   RoomClosedEvent,
   RoomEventType,
 } from '../../src/room/logic/room.event';
-import { GuessRequest, ServerGameRequestType } from '../../src/game/server.request';
+import { ServerGameRequestType } from '../../src/game/server.request';
 import { Game } from '../../src/game/logic/game';
 import { INTERNAL_SENDER, PlayerSender, RequestSender, SenderType } from '../../src/util/sender';
+import { chat, connect, disconnect, gameStart, guess, ready, unready } from '../common/room.request-builder';
 
 
 const testSender: PlayerSender = {
@@ -675,7 +676,7 @@ describe('Room handles GetStateRequest', () => {
                 maxPlayers: 8,
                 game: {
                   answerLength: 4,
-                  playerTimeoutMillis: 60000
+                  playerTimeoutMillis: 20000
                 }
               },
             },
@@ -684,7 +685,7 @@ describe('Room handles GetStateRequest', () => {
               guesser: 0,
               config: {
                 answerLength: 4,
-                playerTimeoutMillis: 60000
+                playerTimeoutMillis: 20000
               }
             },
           },
@@ -698,61 +699,6 @@ describe('Room handles GetStateRequest', () => {
 // integration //
 
 describe('simulated play through', () => {
-
-  function connect(name: string): PlayerConnectRequest {
-    return {
-      type: RoomRequestType.CONNECT,
-      player: name,
-    };
-  }
-
-  function disconnect(name: string): PlayerDisconnectRequest {
-    return {
-      type: RoomRequestType.DISCONNECT,
-      player: name,
-    };
-  }
-
-  function ready(name: string): PlayerReadyRequest {
-    return {
-      type: RoomRequestType.READY,
-      player: name,
-    };
-  }
-
-  function unready(name: string): PlayerReadyRequest {
-    return {
-      type: RoomRequestType.READY,
-      player: name,
-    };
-  }
-
-  function gameStart(): GameStartRequest {
-    return {
-      type: RoomRequestType.START,
-    };
-  }
-
-  function guess(player: string, guess: number[]): GameRequest {
-    return {
-      type: RoomRequestType.GAME,
-      request: {
-        type: ServerGameRequestType.GUESS,
-        player: player,
-        guess: guess,
-      } as GuessRequest,
-    };
-  }
-
-  function chat(player: string, msg: string): ChatRequest {
-    return {
-      type: RoomRequestType.CHAT,
-      msg: {
-        name: player,
-        msg: msg,
-      },
-    };
-  }
 
   it('complex case', () => {
     const server = RoomServer.newRoom('123');

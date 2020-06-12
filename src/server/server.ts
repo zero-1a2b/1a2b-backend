@@ -5,7 +5,7 @@ import { PlayerConnectRequest, PlayerDisconnectRequest, RoomRequestType } from '
 import { INTERNAL_SENDER, SenderType } from '../util/sender';
 import { getLogger } from 'log4js';
 
-const log = getLogger('history-root');
+const log = getLogger('root-server');
 
 function closeOnErrorDefined(action: string, conn: ws): (e?: Error) => void {
   return function(err?: Error): void {
@@ -20,7 +20,7 @@ export class RootServer {
 
   get room(): RoomServer { return this._room; }
 
-  private _room: RoomServer | null;
+  private _room: RoomServer;
 
   private history: RoomEvent[];
 
@@ -44,12 +44,9 @@ export class RootServer {
     this.saveAndDeliverPlayerEvent(event);
   }
 
-  isClosed(): boolean {
-    return this._room === null;
-  }
-
   close(): void {
     this._room.close();
+    this.onClose();
   }
 
   /**
@@ -57,9 +54,9 @@ export class RootServer {
    *  close -> ask RoomServer to close -> close this shell
    */
   private onClose(): void {
-    this._room = null;
-    this.playerConnections.forEach(v => v.close(2020, 'status.room_closing'));
-    this.observerConnections.forEach(v => v.close(2020, 'status.room_closing'));
+    console.log('closing connections');
+    this.playerConnections.forEach(v => v.close(1007, 'status.room_closing'));
+    this.observerConnections.forEach(v => v.close(1007, 'status.room_closing'));
   }
 
   canConnect(player: string): boolean {

@@ -1,195 +1,66 @@
-import * as Koa from 'koa';
-import * as route from 'koa-route';
+import * as ws from 'ws';
 import { RootServer } from './server';
+import * as moment from 'moment';
 import { random } from 'lodash';
 import { RoomEventType } from '../room/logic/room.event';
-import KoaWebsocket, * as websockify from 'koa-websocket';
-import { Server } from 'http';
-import { getLogger } from "log4js";
-import { AddressInfo } from 'net';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const cors = require("@koa/cors");
+import { getLogger } from 'log4js';
 
-const log = getLogger('root-servers');
+const log = getLogger('root-server-cluster');
+
+
+export interface RootServersGCConfig {
+  scanIntervalMillis: number;
+  maxIdleMillis: number;
+}
 
 export interface RootServersConfig {
-
-  readonly port: number;
-
+  gc: RootServersGCConfig
 }
+
 
 export class RootServers {
 
-  static DEFAULT_CONFIG: RootServersConfig = {
-    port: 8085,
+  public static readonly DEFAULT_CONFIG: RootServersConfig = {
+    gc: {
+      scanIntervalMillis: 30*1000,
+      maxIdleMillis: 30*1000
+    }
   };
 
 
-  private config: RootServersConfig;
+  private rooms: Map<string, { room: RootServer, lastActive: moment.Moment }>;
 
-  private rooms: Map<string, RootServer>;
-
-  private koaServer: Server | null;
-
-  private gcTimer: any | null;
+  private gcTimer: NodeJS.Timer | null;
 
 
-  constructor(config?: RootServersConfig) {
-    this.config = config === undefined ? RootServers.DEFAULT_CONFIG : config;
-    this.rooms = new Map();
-    this.koaServer = null;
+  constructor(
+    readonly config: RootServersConfig = RootServers.DEFAULT_CONFIG
+  ) {
+    this.rooms = new Map<string, {room: RootServer, lastActive: moment.Moment}>();
     this.gcTimer = null;
   }
 
-  // lifecycles
+  // life cycles
 
   start(): void {
-    if (this.gcTimer === null) {
-      this.setTimer();
-    }
-    if (this.koaServer === null) {
-      this.startServer();
-    }
-    log.info(`server started`);
+    this.setGCTimer();
   }
 
   stop(): void {
-    if (this.gcTimer !== null) {
-      this.stopTimer();
-    }
-    if (this.koaServer !== null) {
-      this.stopServer();
-    }
-    this.rooms.forEach((v)=>v.close());
-    log.info(`server stopped`);
+    this.clearGCTimer();
+
+    this.rooms.forEach(v=>v.room.close());
   }
 
-  // web inbound logic
+  // eventing
 
-  private startServer(): void {
-    const koa = websockify(new Koa());
-
-    const koaOptions = {
-      credentials: true,
-    };
-    koa.use(cors(koaOptions));
-
-    this.registerRoutes(koa);
-
-    this.koaServer = koa.listen(this.config.port);
-
-    const address: string | AddressInfo = this.koaServer.address();
-    const addrString = address instanceof String ? address : `${(address as AddressInfo).address}:${(address as AddressInfo).port}`;
-    log.info(`started web endpoint on ${addrString}:`);
+  onNewPlayerConnection(conn: ws, room: RootServer): void {
+    conn.on('message', ()=>this.rooms.get(room.room.room.id).lastActive=moment());
   }
 
-  private stopServer(): void {
-    this.koaServer.close();
-  }
+  // operations
 
-  private registerRoutes(app: KoaWebsocket.App): void {
-    app.use(route.put('/rooms', ctx => {
-      this.handleNewRoom(ctx);
-    }));
-    app.use(route.get('/rooms/:id/config', (ctx, id) => {
-      this.handleGetRoomConfig(ctx, id);
-    }));
-    app.use(route.get('/rooms/:id/player/joinable', (ctx, id) => {
-      this.handleCanConnect(ctx, id);
-    }));
-    app.ws.use(route.all('/rooms/:id/player', (ctx, id) => {
-      this.newPlayerConnection(ctx, id);
-    }));
-    app.ws.use(route.all('/rooms/:id/observe', (ctx, id) => {
-      this.newObserverConnection(ctx, id);
-    }));
-  }
-
-  private handleGetRoomConfig(ctx: Koa.Context, id: string): void {
-    try {
-      if (!this.rooms.has(id)) {
-        ctx.throw(404);
-      } else {
-        ctx.body = this.rooms.get(id).room.room.config;
-      }
-    } catch (e) {
-      ctx.throw(e);
-    }
-  }
-
-  private handleCanConnect(ctx: Koa.Context, id: string): void {
-    try {
-      const name = ctx.query.name;
-      if(!(typeof name === 'string')) {
-        ctx.throw(400, 'error.name_not_provided');
-      }
-      if (!this.rooms.has(id)) {
-        ctx.throw(404, 'error.room_not_exists');
-      } else {
-        ctx.response.body = this.rooms.get(id).canConnect(name);
-      }
-    } catch (e) {
-      ctx.throw(e);
-    }
-  }
-
-  private handleNewRoom(ctx: Koa.Context): void {
-    const { id } = this.newRoom();
-    log.debug(`new room allocated: ${id}`);
-    ctx.status = 200;
-    ctx.body = {
-      'code': 'success',
-      'id': id
-    };
-  }
-
-  private newPlayerConnection(ctx: Koa.Context, id: string): void {
-    try {
-      const name = ctx.query.name;
-
-      log.debug(`new player connection for room:[${id}] name:[${name}]`);
-      ctx.websocket.on('close',(code, reason)=>{
-        log.debug(`player connection for room:[${id}] name:[${name}] closed: ${code}:${reason}`)
-      });
-      ctx.websocket.on('error',(error)=>{
-        log.debug(`player connection for room:[${id}] name:[${name}] errored: ${error}`)
-      });
-
-      if(!(typeof name === 'string')) {
-        ctx.websocket.close(4000, 'error.name_not_provided');
-      }
-      if (!this.rooms.has(id)) {
-        ctx.websocket.close(4040, 'error.room_not_exists');
-      } else {
-        this.rooms.get(id).onNewPlayerConnection(ctx.websocket, ctx.query.name);
-      }
-    } catch (e) {
-      ctx.throw(e);
-    }
-  }
-
-  private newObserverConnection(ctx: Koa.Context, id: string): void {
-    try {
-      log.debug(`new observer connection for room:[${id}]`);
-      ctx.websocket.on('close',(code, reason)=>{
-        log.debug(`observer connection for room:[${id}] name:[${ctx.query.name}] closed: ${code}:${reason}`)
-      });
-      ctx.websocket.on('error',(error)=>{
-        log.debug(`observer connection for room:[${id}] name:[${ctx.query.name}] errored: ${error}`)
-      });
-      if (!this.rooms.has(id)) {
-        ctx.websocket.close(4040, 'error.room_not_exists');
-      } else {
-        this.rooms.get(id).onNewObserverConnection(ctx.websocket);
-      }
-    } catch (e) {
-      ctx.throw(e);
-    }
-  }
-
-  // logic
-
-  private newRoom(): { id: string, key: string } {
+  newRoom(): { id: string; key: string; } {
     let id = 1;
     while (this.rooms.has(id.toString())) {
       id = random(0, 10 ** 5, false);
@@ -203,7 +74,13 @@ export class RootServers {
         id: id.toString(),
       },
     );
-    this.rooms.set(id.toString(), server);
+    this.rooms.set(
+      id.toString(),
+      {
+        room: server,
+        lastActive: moment()
+      }
+    );
 
     return {
       id: id.toString(),
@@ -211,37 +88,49 @@ export class RootServers {
     };
   }
 
-  // timed GC logic
-
-  private setTimer(): void {
-    this.gcTimer = setTimeout(() => {
-      this.gc();
-      this.gcTimer = null;
-      this.setTimer();
-    }, 30 * 1000);
+  getRoom(id: string): RootServer | null {
+    return this.rooms.has(id) ? this.rooms.get(id).room : null;
   }
 
-  private stopTimer(): void {
+  closeRoom(id: string): void {
+    if(this.rooms.has(id)) {
+      const { room } = this.rooms.get(id);
+      room.close();
+      this.rooms.delete(id);
+    }
+  }
+
+  // GC Logic
+
+  gc(): void {
+    log.info(`executing room GC`);
+    const toGC: string[] = [];
+    const now = moment();
+    this.rooms.forEach((v, k) => {
+      log.debug(`room: ${k}: ${now.diff(v.lastActive)}`);
+      if (now.diff(v.lastActive)>=this.config.gc.maxIdleMillis) {
+        toGC.push(k);
+      }
+    });
+
+    toGC.forEach(v => { this.closeRoom(v); });
+    log.info(`GC deleted ${toGC.length} rooms`);
+    log.debug(`GC room id:${JSON.stringify(toGC)}`);
+  }
+
+  private setGCTimer(): void {
+    this.gcTimer = setTimeout(() => {
+      this.gc();
+      this.clearGCTimer();
+      this.setGCTimer();
+    }, this.config.gc.scanIntervalMillis);
+  }
+
+  private clearGCTimer(): void {
     if (this.gcTimer !== null) {
       clearTimeout(this.gcTimer);
       this.gcTimer = null;
     }
-  }
-
-  private gc(): void {
-    log.info(`executing room GC`);
-    const toGC = [];
-    this.rooms.forEach((v, k) => {
-      if (v.isClosed()) {
-        toGC.push(k);
-      }
-    });
-    toGC.forEach(v => {
-      this.rooms.get(v).close();
-      this.rooms.delete(v);
-    });
-    log.info(`GC deleted ${toGC.length} rooms`);
-    log.debug(`GC room id:${toGC}`);
   }
 
 }
