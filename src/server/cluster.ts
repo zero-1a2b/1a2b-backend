@@ -23,7 +23,7 @@ export class RootServers {
   public static readonly DEFAULT_CONFIG: RootServersConfig = {
     gc: {
       scanIntervalMillis: 30*1000,
-      maxIdleMillis: 30*1000
+      maxIdleMillis: 10*60*1000
     }
   };
 
