@@ -15,6 +15,7 @@ export interface GameEvent {
 
 }
 
+// new game events //
 
 export type NewGameEvent = NewClientGameEvent | NewServerGameEvent;
 
@@ -52,6 +53,7 @@ export function mapToClient(server: NewServerGameEvent): NewClientGameEvent {
   }
 }
 
+// normal game event //
 
 export type NormalGameEvent = TimeoutEvent | GuessEvent;
 

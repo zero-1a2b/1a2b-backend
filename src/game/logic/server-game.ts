@@ -20,6 +20,7 @@ export function newServerGameEvent(
   } = {},
 ): NewServerGameEvent {
 
+  // basic configuration check
   if (!(0 < config.answerLength && config.answerLength < 10)) {
     throw Error(`answer length ${config.answerLength} is not in range [1,9]`);
   }
@@ -30,30 +31,31 @@ export function newServerGameEvent(
     throw Error(`players cannot be empty!`);
   }
 
-  let shuffledNumbers = [];
+  let answer: number[];
   if (extra.answer !== undefined) {
     if (extra.answer.length != config.answerLength) {
       throw Error('the length of given answer is not equal to config ');
     }
-    shuffledNumbers = extra.answer;
+    answer = extra.answer;
   } else {
-    shuffledNumbers = take(shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]), config.answerLength);
+    answer = take(shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]), config.answerLength);
   }
 
-  let shuffledPlayers;
+  let guessPlayerOrder: string[];
   if (extra.players !== undefined) {
-    shuffledPlayers = extra.players;
+    guessPlayerOrder = extra.players;
   } else {
-    shuffledPlayers = shuffle(players);
+    guessPlayerOrder = shuffle(players);
   }
 
   return {
     type: GameEventType.NEW_GAME_SERVER,
-    answer: shuffledNumbers,
-    players: shuffledPlayers,
+    answer: answer,
+    players: guessPlayerOrder,
     config: config,
   };
 }
+
 
 export function mapToClient(server: ServerGame): ClientGame {
   return new ClientGame(

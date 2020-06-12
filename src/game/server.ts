@@ -43,18 +43,16 @@ export class GameServer {
 
 
   private _state: GameState;
-
   public get state(): GameState {
     return this._state;
   }
 
-  public readonly events: EventEmitter<GameEvent>;
-
   private _game: ServerGame;
-
   public get game(): ServerGame {
     return this._game;
   }
+
+  public readonly events: EventEmitter<GameEvent>;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _timeout: any | undefined;
@@ -62,10 +60,8 @@ export class GameServer {
 
   constructor(start: NewServerGameEvent) {
     this._state = GameState.READY;
-
-    this.events = new EventEmitter();
     this._game = ServerGame.fromNewGameEvent(start);
-
+    this.events = new EventEmitter();
     this._timeout = undefined;
   }
 

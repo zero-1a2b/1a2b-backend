@@ -14,6 +14,7 @@ export interface GameConfig {
 
 }
 
+
 export class Game {
 
     static DEFAULT_GAME_CONFIG: GameConfig = {
