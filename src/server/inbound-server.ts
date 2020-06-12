@@ -10,7 +10,6 @@ const cors = require("@koa/cors");
 import * as ws from 'ws';
 import { RootServer } from './server';
 import { RootServers } from './cluster';
-import serve from 'koa-static';
 
 
 const log = getLogger('root-servers');
@@ -79,8 +78,6 @@ export class RootServersInbound {
     //room inbound
     app.ws.use(route.all('/rooms/:id/player', (ctx, id) => { this.handleNewPlayerConnection(ctx, id); }));
     app.ws.use(route.all('/rooms/:id/observe', (ctx, id) => { this.newObserverConnection(ctx, id); }));
-    //static file
-    app.use(serve("."));
   }
 
 
