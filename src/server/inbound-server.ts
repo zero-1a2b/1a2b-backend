@@ -10,6 +10,7 @@ const cors = require("@koa/cors");
 import * as ws from 'ws';
 import { RootServer } from './server';
 import { RootServers } from './cluster';
+import serve from 'koa-static';
 
 
 const log = getLogger('root-servers');
@@ -70,11 +71,16 @@ export class RootServersInbound {
 
 
   private registerRoutes(app: KoaWebsocket.App): void {
+    //new room
     app.use(route.put('/rooms', ctx => { this.handleNewRoom(ctx); }));
+    //room metadata
     app.use(route.get('/rooms/:id/config', (ctx, id) => { this.handleGetRoomConfig(ctx, id); }));
     app.use(route.get('/rooms/:id/player/joinable', (ctx, id) => { this.handleCanConnect(ctx, id); }));
+    //room inbound
     app.ws.use(route.all('/rooms/:id/player', (ctx, id) => { this.handleNewPlayerConnection(ctx, id); }));
     app.ws.use(route.all('/rooms/:id/observe', (ctx, id) => { this.newObserverConnection(ctx, id); }));
+    //static file
+    app.use(serve("."));
   }
 
 
