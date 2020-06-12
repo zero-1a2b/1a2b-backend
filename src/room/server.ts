@@ -225,18 +225,17 @@ export class RoomServer {
       if(this.room.playerIDs.findIndex(v=>v===req.player) != -1) {
         throw new Error("error.name_repeated");
       }
-      return {
-        type: RoomEventType.PLAYER_JOIN,
-        player: req.player
-      };
     } else {
       //playing state
-      if(this.room.playerIDs.findIndex(v=>v===req.player) == -1) {
+      if(this.game.game.players.findIndex(v=>v===req.player) == -1) {
         throw new Error("error.not_playing_player");
-      } else {
-        return null;
       }
     }
+
+    return {
+      type: RoomEventType.PLAYER_JOIN,
+      player: req.player
+    };
   }
 
   private handlePlayerDisconnect(req: PlayerDisconnectRequest, sender: RequestSender): PlayerLeftEvent | null {

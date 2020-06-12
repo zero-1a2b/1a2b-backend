@@ -17,7 +17,7 @@ import {
   ChangeSettingsEvent,
   GameStartedEvent,
   NormalRoomEvent,
-  PlayerJoinEvent,
+  PlayerJoinEvent, PlayerLeftEvent,
   PlayerReadyEvent,
   RoomClosedEvent,
   RoomEventType,
@@ -151,6 +151,11 @@ const joinEvent: PlayerJoinEvent = {
 
 const readyEvent: PlayerReadyEvent = {
   type: RoomEventType.PLAYER_READY,
+  player: 'test',
+};
+
+const leftEvent: PlayerLeftEvent = {
+  type: RoomEventType.PLAYER_LEFT,
   player: 'test',
 };
 
@@ -303,6 +308,7 @@ describe('Room handles PlayerConnect Correctly', () => {
         joinEvent,
         readyEvent,
         startedEvent,
+        leftEvent
       ],
       request: {
         type: RoomRequestType.CONNECT,
@@ -310,7 +316,13 @@ describe('Room handles PlayerConnect Correctly', () => {
       },
       sender: INTERNAL_SENDER,
       assertions: (run) => {
-        expect(run).not.toThrow();
+        const { events: events } = run();
+        expect(events[0]).toEqual(
+          {
+            type: RoomEventType.PLAYER_JOIN,
+            player: 'test',
+          }
+        )
       },
     });
   });
