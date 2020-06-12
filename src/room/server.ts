@@ -20,6 +20,8 @@ import {
   GameStartRequest,
   GetStateRequest,
   GetStateResponse,
+  GetGameStateRequest,
+  GetGameStateResponse,
   PlayerConnectRequest,
   PlayerDisconnectRequest,
   PlayerReadyRequest,
@@ -190,6 +192,10 @@ export class RoomServer {
         events = [];
         ret = this.handleGetState(req as GetStateRequest, sender);
         break;
+      case RoomRequestType.GET_GAME_STATE:
+        events = [];
+        ret = this.handleGetGameState(req as GetGameStateRequest, sender);
+        break;
     }
     //apply events
     events.forEach(r=>this.acceptAndSendEvent(r));
@@ -331,6 +337,16 @@ export class RoomServer {
         chats: this.room.chats,
         config: this.room.config
       },
+      game: this.game !== null ? mapStateToClient(this.game.game) : null
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private handleGetGameState(_req: GetGameStateRequest, _sender: RequestSender): GetGameStateResponse {
+    const ready = {};
+    this.room.playerReady.forEach((value, key) => ready[key]=value);
+    return {
+      type: RoomRequestType.GET_GAME_STATE,
       game: this.game !== null ? mapStateToClient(this.game.game) : null
     }
   }

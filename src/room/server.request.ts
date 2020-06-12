@@ -12,7 +12,8 @@ export enum RoomRequestType {
   START = "start",
   GAME = "game",
   CHAT = "chat",
-  GET_STATE = "get_state"
+  GET_STATE = "get_state",
+  GET_GAME_STATE = "get_game_state"
 }
 
 export interface RoomServerRequest {
@@ -97,4 +98,16 @@ export interface GetStateResponse {
 
 }
 
+export interface GetGameStateRequest extends RoomServerRequest {
 
+  type: RoomRequestType.GET_GAME_STATE;
+
+}
+export interface GetGameStateResponse {
+
+  type: RoomRequestType.GET_GAME_STATE,
+
+  game: ClientGame;
+
+
+}
