@@ -1,4 +1,4 @@
-import { GameServer, GameState } from '../../src/game/server';
+import { GameServer} from '../../src/game/server';
 import {
   GameEvent,
   GameEventType,
@@ -8,6 +8,7 @@ import {
 } from '../../src/game/logic/game.event';
 import { GuessRequest, ServerGameRequestType } from '../../src/game/server.request';
 import { RequestSender, SenderType } from '../../src/util/sender';
+import { GameState } from '../../src/game/game-state';
 
 const aSender: RequestSender = { type: SenderType.PLAYER, player: 'a'};
 

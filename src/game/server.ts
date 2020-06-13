@@ -9,23 +9,11 @@ import {
 import { Player } from './logic/player';
 import { EventEmitter } from '../util/EventEmitter';
 import { newServerGameEvent, ServerGame } from './logic/server-game';
-import { GameServerRequest, ServerGameRequestType, GuessRequest, TimeoutRequest } from './server.request';
+import { GameServerRequest, GuessRequest, ServerGameRequestType, TimeoutRequest } from './server.request';
 import { GameConfig } from './logic/game';
 import { zip } from 'lodash';
-import {
-  assertInternalSender,
-  assertTrue,
-  INTERNAL_SENDER,
-  isPlayerSender,
-  RequestSender,
-} from '../util/sender';
-
-
-export enum GameState {
-  READY,
-  RUNNING,
-  FINISHED
-}
+import { assertInternalSender, assertTrue, INTERNAL_SENDER, isPlayerSender, RequestSender } from '../util/sender';
+import { GameState } from './game-state';
 
 
 export class GameServer {
@@ -68,7 +56,20 @@ export class GameServer {
   // eventing
 
   acceptEvent(e: NormalGameEvent): void {
+    switch (e.type) {
+      case GameEventType.TIMEOUT:
+        this.resetTimeoutTimer();
+        break;
+      case GameEventType.GUESS:
+        this.resetTimeoutTimer();
+        break;
+    }
+
     this._game = this._game.handleEvent(e);
+
+    if (this.game.isFinished()) {
+      this.stop();
+    }
   }
 
   private emitEvent(e: NormalGameEvent): void {
@@ -98,11 +99,12 @@ export class GameServer {
     switch (this._state) {
       case GameState.RUNNING: {
         this.stopTimeoutTimer();
-        //done
         this._state = GameState.FINISHED;
       }
         break;
       case GameState.READY:
+        this._state = GameState.FINISHED;
+        break;
       case GameState.FINISHED:
         //trivially success
         break;
@@ -116,21 +118,15 @@ export class GameServer {
     switch (req.type) {
       case ServerGameRequestType.GUESS: {
         ret = this.wrap(this.guess(req as GuessRequest, sender));
-        this.resetTimeoutTimer();
         break;
       }
       case ServerGameRequestType.TIMEOUT: {
         ret = this.wrap(this.timeout(req as TimeoutRequest, sender));
-        this.resetTimeoutTimer();
         break;
       }
     }
 
     ret.forEach(v=>this.emitEvent(v));
-
-    if (this.game.isFinished()) {
-      this.stop();
-    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -1,6 +1,6 @@
 import { GameClient } from "../../src/game/client";
 import { GameEventType, GuessEvent } from '../../src/game/logic/game.event';
-import { GameState } from '../../src/game/server';
+import { GameState } from '../../src/game/game-state';
 
 
 function newGameClient(): GameClient {
