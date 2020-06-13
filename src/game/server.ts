@@ -14,6 +14,7 @@ import { GameConfig } from './logic/game';
 import { zip } from 'lodash';
 import { assertInternalSender, assertTrue, INTERNAL_SENDER, isPlayerSender, RequestSender } from '../util/sender';
 import { GameState } from './game-state';
+import { RepeatedTimer } from '../util/timer';
 
 
 export class GameServer {
@@ -30,6 +31,8 @@ export class GameServer {
   }
 
 
+  public readonly events: EventEmitter<GameEvent>;
+
   private _state: GameState;
   public get state(): GameState {
     return this._state;
@@ -40,17 +43,20 @@ export class GameServer {
     return this._game;
   }
 
-  public readonly events: EventEmitter<GameEvent>;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private _timeout: any | undefined;
+  private _timeout: RepeatedTimer;
 
 
   constructor(start: NewServerGameEvent) {
+    this.events = new EventEmitter();
+
     this._state = GameState.READY;
     this._game = ServerGame.fromNewGameEvent(start);
-    this.events = new EventEmitter();
-    this._timeout = undefined;
+
+    this._timeout = new RepeatedTimer(
+      this.game.config.playerTimeoutMillis,
+      true,
+      ()=>this.handleRequest({ type: ServerGameRequestType.TIMEOUT }, INTERNAL_SENDER)
+    );
   }
 
   // eventing
@@ -58,10 +64,10 @@ export class GameServer {
   acceptEvent(e: NormalGameEvent): void {
     switch (e.type) {
       case GameEventType.TIMEOUT:
-        this.resetTimeoutTimer();
+        this._timeout.reset();
         break;
       case GameEventType.GUESS:
-        this.resetTimeoutTimer();
+        this._timeout.reset();
         break;
     }
 
@@ -82,7 +88,7 @@ export class GameServer {
   start(): void {
     switch (this._state) {
       case GameState.READY: {
-        this.startTimeoutTimer();
+        this._timeout.start();
         //done
         this._state = GameState.RUNNING;
       }
@@ -98,7 +104,7 @@ export class GameServer {
   stop(): void {
     switch (this._state) {
       case GameState.RUNNING: {
-        this.stopTimeoutTimer();
+        this._timeout.stop();
         this._state = GameState.FINISHED;
       }
         break;
@@ -181,31 +187,6 @@ export class GameServer {
     } else {
       return [e];
     }
-  }
-
-  // timer related code
-
-  private resetTimeoutTimer(): void {
-    this.stopTimeoutTimer();
-    this.startTimeoutTimer();
-  }
-
-  private startTimeoutTimer(): void {
-    if (this._timeout != undefined) {
-      throw new Error('there is already a timer!');
-    }
-
-    this._timeout = setTimeout(() => {
-      this.handleRequest({ type: ServerGameRequestType.TIMEOUT }, INTERNAL_SENDER);
-    }, this.game.config.playerTimeoutMillis);
-  }
-
-  private stopTimeoutTimer(): void {
-    if (this._timeout == undefined) {
-      throw new Error('there is no timer set!');
-    }
-    clearTimeout(this._timeout);
-    this._timeout = undefined;
   }
 
 }
