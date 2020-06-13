@@ -19,10 +19,6 @@ export interface GameEvent {
 
 export type NewGameEvent = NewClientGameEvent | NewServerGameEvent;
 
-export function isNewGameEvent(e: GameEvent): e is NewGameEvent {
-    return e.type === GameEventType.NEW_GAME_CLIENT || e.type === GameEventType.NEW_GAME_SERVER;
-}
-
 export interface NewClientGameEvent extends GameEvent {
 
     readonly type: GameEventType.NEW_GAME_CLIENT;
@@ -56,10 +52,6 @@ export function mapToClient(server: NewServerGameEvent): NewClientGameEvent {
 // normal game event //
 
 export type NormalGameEvent = TimeoutEvent | GuessEvent;
-
-export function isNormalEvent(e: GameEvent): e is NormalGameEvent {
-  return e.type === GameEventType.GUESS || e.type === GameEventType.TIMEOUT;
-}
 
 export interface TimeoutEvent extends GameEvent {
 

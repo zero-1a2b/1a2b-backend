@@ -15,6 +15,7 @@ import { zip } from 'lodash';
 import { assertInternalSender, assertTrue, INTERNAL_SENDER, isPlayerSender, RequestSender } from '../util/sender';
 import { GameState } from './game-state';
 import { RepeatedTimer } from '../util/timer';
+import { wrap } from '../util/util';
 
 
 export class GameServer {
@@ -123,11 +124,11 @@ export class GameServer {
     let ret: Array<NormalGameEvent>;
     switch (req.type) {
       case ServerGameRequestType.GUESS: {
-        ret = this.wrap(this.guess(req as GuessRequest, sender));
+        ret = wrap(this.guess(req as GuessRequest, sender));
         break;
       }
       case ServerGameRequestType.TIMEOUT: {
-        ret = this.wrap(this.timeout(req as TimeoutRequest, sender));
+        ret = wrap(this.timeout(req as TimeoutRequest, sender));
         break;
       }
     }
@@ -177,16 +178,6 @@ export class GameServer {
     ;
 
     return { a: a, b: b };
-  }
-
-  private wrap(e: Array<NormalGameEvent> | NormalGameEvent | null): Array<NormalGameEvent> {
-    if(e === null) {
-      return [];
-    } else if(e instanceof Array) {
-      return e;
-    } else {
-      return [e];
-    }
   }
 
 }

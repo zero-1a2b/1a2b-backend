@@ -4,6 +4,7 @@ import * as moment from 'moment';
 import { random } from 'lodash';
 import { RoomEventType } from '../room/logic/room.event';
 import { getLogger } from 'log4js';
+import { RepeatedTimer } from '../util/timer';
 
 const log = getLogger('root-server-cluster');
 
@@ -32,24 +33,28 @@ export class RootServers {
 
   private rooms: Map<string, { room: RootServer, lastActive: moment.Moment }>;
 
-  private gcTimer: NodeJS.Timer | null;
+  private gcTimer: RepeatedTimer;
 
 
   constructor(
     readonly config: RootServersConfig = RootServers.DEFAULT_CONFIG
   ) {
     this.rooms = new Map<string, {room: RootServer, lastActive: moment.Moment}>();
-    this.gcTimer = null;
+    this.gcTimer = new RepeatedTimer(
+      this.config.gc.scanIntervalMillis,
+      true,
+      ()=>this.gc()
+    );
   }
 
   // life cycles
 
   start(): void {
-    this.setGCTimer();
+    this.gcTimer.start();
   }
 
   stop(): void {
-    this.clearGCTimer();
+    this.gcTimer.stop();
 
     this.rooms.forEach(v=>v.room.close());
   }
@@ -121,21 +126,6 @@ export class RootServers {
     toGC.forEach(v => { this.closeRoom(v); });
     log.info(`GC deleted ${toGC.length} rooms`);
     log.debug(`GC room id:${JSON.stringify(toGC)}`);
-  }
-
-  private setGCTimer(): void {
-    this.gcTimer = setTimeout(() => {
-      this.gc();
-      this.clearGCTimer();
-      this.setGCTimer();
-    }, this.config.gc.scanIntervalMillis);
-  }
-
-  private clearGCTimer(): void {
-    if (this.gcTimer !== null) {
-      clearTimeout(this.gcTimer);
-      this.gcTimer = null;
-    }
   }
 
 }

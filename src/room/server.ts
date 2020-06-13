@@ -36,6 +36,7 @@ import * as perm from '../util/sender';
 import { assertTrue, INTERNAL_SENDER, RequestSender, SenderType } from '../util/sender';
 import * as _ from 'lodash';
 import { GameState } from '../game/game-state';
+import { wrap } from '../util/util';
 
 
 export class RoomServer {
@@ -184,28 +185,28 @@ export class RoomServer {
     let ret: object | null = null;
     switch (req.type) {
       case RoomRequestType.CHANGE_SETTINGS:
-        events = this.wrap(this.handleChangeSettings(req as ChangeSettingsRequest, sender));
+        events = wrap(this.handleChangeSettings(req as ChangeSettingsRequest, sender));
         break;
       case RoomRequestType.CONNECT:
-        events = this.wrap(this.handlePlayerConnect(req as PlayerConnectRequest, sender));
+        events = wrap(this.handlePlayerConnect(req as PlayerConnectRequest, sender));
         break;
       case RoomRequestType.DISCONNECT:
-        events = this.wrap(this.handlePlayerDisconnect(req as PlayerDisconnectRequest, sender));
+        events = wrap(this.handlePlayerDisconnect(req as PlayerDisconnectRequest, sender));
         break;
       case RoomRequestType.READY:
-        events = this.wrap(this.handlePlayerReady(req as PlayerReadyRequest, sender));
+        events = wrap(this.handlePlayerReady(req as PlayerReadyRequest, sender));
         break;
       case RoomRequestType.UNREADY:
-        events = this.wrap(this.handlePlayerUnready(req as PlayerUnreadyRequest, sender));
+        events = wrap(this.handlePlayerUnready(req as PlayerUnreadyRequest, sender));
         break;
       case RoomRequestType.START:
-        events = this.wrap(this.handleGameStart(req as GameStartRequest, sender));
+        events = wrap(this.handleGameStart(req as GameStartRequest, sender));
         break;
       case RoomRequestType.GAME:
-        events = this.wrap(this.handleGameRequest(req as GameRequest, sender));
+        events = wrap(this.handleGameRequest(req as GameRequest, sender));
         break;
       case RoomRequestType.CHAT:
-        events = this.wrap(this.handleChatRequest(req as ChatRequest, sender));
+        events = wrap(this.handleChatRequest(req as ChatRequest, sender));
         break;
       case RoomRequestType.GET_STATE:
         events = [];
@@ -378,17 +379,6 @@ export class RoomServer {
       type: RoomEventType.CHAT,
       msg: req.msg
     };
-  }
-
-  // noinspection JSMethodCanBeStatic
-  private wrap(e: Array<NormalRoomEvent> | NormalRoomEvent | null): Array<NormalRoomEvent> {
-    if(e === null) {
-      return [];
-    } else if(e instanceof Array) {
-      return e;
-    } else {
-      return [e];
-    }
   }
 
 }
