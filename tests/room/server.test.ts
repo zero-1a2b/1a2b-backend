@@ -742,6 +742,9 @@ describe('simulated play through', () => {
       },
     );
 
+    const last = [];
+    server.events.subscribe(v=>last.push(v));
+
     const rightAnswer = [...server.game.game.answer];
     server.handleRequest(
       guess(playerB, rightAnswer),
@@ -751,7 +754,18 @@ describe('simulated play through', () => {
       },
     );
 
-    expect(server.game.game.winner).toEqual(playerB);
+    expect(server.game).toBeNull();
+    expect(last[last.length-2]).toEqual(
+      {
+        type: RoomEventType.GAME_FINISHED,
+        winner: playerB
+      }
+    )
+    expect(last[last.length-1]).toEqual(
+      {
+        type: RoomEventType.ROOM_CLOSED
+      }
+    )
   });
 
 });

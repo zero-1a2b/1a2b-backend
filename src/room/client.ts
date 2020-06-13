@@ -14,6 +14,7 @@ export class RoomClient {
   public get game(): GameClient { return this._game; }
   private _game: GameClient | null;
 
+
   constructor(event: NewRoomEvent){
     this._room = Room.fromNewRoomEvent(event);
     this._game = null;

@@ -5,6 +5,7 @@ import { ChatLine, RoomConfig } from './room';
 export enum RoomEventType {
     NEW_ROOM= "new_room",
     ROOM_CLOSED = "room_closed",
+
     CHANGE_SETTINGS = "change_settings",
 
     PLAYER_JOIN = "join",
@@ -128,6 +129,8 @@ export interface RoomGameEvent extends RoomEvent {
 export interface GameFinishedEvent extends RoomEvent {
 
     readonly type: RoomEventType.GAME_FINISHED;
+
+    readonly winner: string;
 
 }
 
