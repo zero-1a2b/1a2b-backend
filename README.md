@@ -2,7 +2,7 @@
 [![Node.js version][nodejs-badge]][nodejs]
 [![APLv2][license-badge]][LICENSE]
 [![Maintainability][codeclimate-badge]][codeclimate]
-[![Build Status - Travis][travis-badge]][travis-ci]
+[![Build Status](https://www.travis-ci.org/zero-1a2b/1a2b-backend.svg?branch=master)](https://www.travis-ci.org/zero-1a2b/1a2b-backend)
 [![codecov](https://codecov.io/gh/zero-1a2b/1a2b-backend/branch/master/graph/badge.svg)](https://codecov.io/gh/zero-1a2b/1a2b-backend)
 
 # 1A2B Backend
