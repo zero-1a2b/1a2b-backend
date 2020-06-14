@@ -7,9 +7,11 @@ import { ClientGame } from './client-game';
 
 /**
  * creates a new server game event(aka a new game) from game configuration
- * @param players
- * @param config
- * @param extra
+ * @param players the players of this game, will get shuffled
+ * @param config the config of the game
+ * @param extra the "hack hatch"
+ *  extra.answer: specify the answer of the event
+ *  extra.players: specify the order of guessing of the players
  */
 export function newServerGameEvent(
   players: Player[],
@@ -59,16 +61,14 @@ export function newServerGameEvent(
 
 export function mapToClient(server: ServerGame): ClientGame {
   return new ClientGame(
-    new Game(
-      server.players,
-      server.winner,
-      server.guesser,
-      server.config
-    )
+    new Game(server.players, server.guesser, server.winner, server.config)
   );
 }
 
 
+/**
+ * the server version of the game, acts as a master in state sync.
+ */
 export class ServerGame extends Game {
 
   static fromNewGameEvent(event: NewServerGameEvent): ServerGame {
@@ -85,7 +85,7 @@ export class ServerGame extends Game {
     readonly answer: number[],
     readonly answerDigits: Set<number>,
   ) {
-    super(game.players, game.winner, game.guesser, game.config);
+    super(game.players, game.guesser, game.winner, game.config);
   }
 
 

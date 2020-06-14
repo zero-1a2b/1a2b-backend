@@ -1,5 +1,6 @@
 import { Player } from './logic/player';
 
+// base interface //
 
 export enum ServerGameRequestType {
   GUESS = "guess",
@@ -12,6 +13,11 @@ export interface GameServerRequest {
 
 }
 
+
+/**
+ * represents a player's guess
+ * @note security: the player must match the sender's player name
+ */
 export interface GuessRequest extends GameServerRequest {
 
   readonly type: ServerGameRequestType.GUESS;
@@ -22,6 +28,10 @@ export interface GuessRequest extends GameServerRequest {
 
 }
 
+/**
+ * represents a player's guess
+ * @note security: only SYSTEM(INTERNAL_SENDER) can send this request
+ */
 export interface TimeoutRequest extends GameServerRequest {
 
   readonly type: ServerGameRequestType.TIMEOUT;

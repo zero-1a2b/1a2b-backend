@@ -1,6 +1,10 @@
 import { NewClientGameEvent, NormalGameEvent } from './game.event';
 import { Game } from './game';
 
+
+/**
+ * the client version of game, acts as a follower in state sync.
+ */
 export class ClientGame extends Game {
 
   static fromNewGameEvent(event: NewClientGameEvent): ClientGame {
@@ -13,7 +17,7 @@ export class ClientGame extends Game {
   constructor(
     game: Game,
   ) {
-    super(game.players, game.winner, game.guesser, game.config);
+    super(game.players, game.guesser, game.winner, game.config);
   }
 
 

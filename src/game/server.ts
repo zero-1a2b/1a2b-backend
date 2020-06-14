@@ -18,6 +18,10 @@ import { RepeatedTimer } from '../util/timer';
 import { wrap } from '../util/util';
 
 
+/**
+ * represents the server version of game, with all the dependency and lifecycle stuff
+ * @note the game need to be manually start() and stop(), though it will automatically stop after having a winner
+ */
 export class GameServer {
 
   static newGame(
@@ -90,7 +94,6 @@ export class GameServer {
     switch (this._state) {
       case GameState.READY: {
         this._timeout.start();
-        //done
         this._state = GameState.RUNNING;
       }
         break;
@@ -104,10 +107,9 @@ export class GameServer {
 
   stop(): void {
     switch (this._state) {
-      case GameState.RUNNING: {
+      case GameState.RUNNING:
         this._timeout.stop();
         this._state = GameState.FINISHED;
-      }
         break;
       case GameState.READY:
         this._state = GameState.FINISHED;
@@ -123,14 +125,14 @@ export class GameServer {
   handleRequest(req: GameServerRequest, sender: RequestSender): void {
     let ret: Array<NormalGameEvent>;
     switch (req.type) {
-      case ServerGameRequestType.GUESS: {
+      case ServerGameRequestType.GUESS:
         ret = wrap(this.guess(req as GuessRequest, sender));
         break;
-      }
-      case ServerGameRequestType.TIMEOUT: {
+      case ServerGameRequestType.TIMEOUT:
         ret = wrap(this.timeout(req as TimeoutRequest, sender));
         break;
-      }
+      default:
+        throw new Error("error.unexpected_req_type");
     }
 
     ret.forEach(v=>this.emitEvent(v));

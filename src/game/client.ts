@@ -3,6 +3,9 @@ import { ClientGame } from './logic/client-game';
 import { GameState } from './game-state';
 
 
+/**
+ * represents the client version of game, with a more OOP interface
+ */
 export class GameClient {
 
     static newGame(event: NewClientGameEvent): GameClient {

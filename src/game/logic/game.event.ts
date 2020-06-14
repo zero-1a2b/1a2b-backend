@@ -1,6 +1,7 @@
 import { Player } from './player';
 import { GameConfig } from './game';
 
+// base interface //
 
 export enum GameEventType {
     NEW_GAME_CLIENT = "new_game_client",
@@ -9,6 +10,9 @@ export enum GameEventType {
     GUESS = "guess"
 }
 
+/**
+ * represents a game event, you can only use it to manipulate game state
+ */
 export interface GameEvent {
 
     readonly type: GameEventType;
@@ -17,6 +21,9 @@ export interface GameEvent {
 
 // new game events //
 
+/**
+ * represents a new game, represents the start of the game stream
+ */
 export type NewGameEvent = NewClientGameEvent | NewServerGameEvent;
 
 export interface NewClientGameEvent extends GameEvent {
@@ -51,14 +58,24 @@ export function mapToClient(server: NewServerGameEvent): NewClientGameEvent {
 
 // normal game event //
 
+/**
+ * all other event's type
+ */
 export type NormalGameEvent = TimeoutEvent | GuessEvent;
 
+/**
+ * meaning the current player's round is out
+ */
 export interface TimeoutEvent extends GameEvent {
 
     readonly type: GameEventType.TIMEOUT;
 
 }
 
+/**
+ * meaning a player have made a guess
+ * @note the game will figure out who wins in this event
+ */
 export interface GuessEvent extends GameEvent {
 
     readonly type: GameEventType.GUESS;
