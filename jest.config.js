@@ -12,6 +12,7 @@ module.exports = {
     "node",
   ],
   testRegex: '((\\.|/)(test|spec))\\.(ts|js)x?$',
+  collectCoverage:true,
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'src/**/*.{ts,tsx,js,jsx}',
