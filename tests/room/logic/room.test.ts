@@ -51,7 +51,8 @@ const gameEvent: RoomGameEvent = {
 };
 
 const gameFinishedEvent: GameFinishedEvent = {
-  type: RoomEventType.GAME_FINISHED
+  type: RoomEventType.GAME_FINISHED,
+  winner: 'test'
 };
 
 

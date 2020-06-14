@@ -2,7 +2,7 @@
 [![Node.js version][nodejs-badge]][nodejs]
 [![APLv2][license-badge]][LICENSE]
 [![Build Status - Travis][travis-badge]][travis-ci]
-[![Maintainability][codeclimate]][codeclimate]
+[![Maintainability][codeclimate]][codeclimate-badge]
 
 # 1A2B Backend
 
@@ -49,9 +49,8 @@ This project is based on node-typescript-boilerplate, check it out!
 [wiki-js-tests]: https://github.com/jsynowiec/node-typescript-boilerplate/wiki/Unit-tests-in-plain-JavaScript
 [prettier]: https://prettier.io
 [gh-actions]: https://github.com/features/actions
-[travis]: https://travis-ci.org
+[travis]: https://www.travis-ci.org/zero-1a2b/1a2b-backend.svg?branch=master
+[travis-ci]: https://www.travis-ci.org/zero-1a2b/1a2b-backend
 
 [codeclimate-badge]: https://api.codeclimate.com/v1/badges/bc39035b28382658967f/maintainability
 [codeclimate]: https://codeclimate.com/github/zero-1a2b/1a2b-backend/maintainability
-
-[repo-template-action]: https://github.com/jsynowiec/node-typescript-boilerplate/generate
