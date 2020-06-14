@@ -21,6 +21,10 @@ export interface InboundConfig {
 
 }
 
+
+/**
+ * inbound, does all the websocket dirty logic
+ */
 export class RootServersInbound {
 
   static DEFAULT_CONFIG: InboundConfig = {
@@ -50,10 +54,7 @@ export class RootServersInbound {
   start(): void {
     const koa = websockify(new Koa());
 
-    const koaOptions = {
-      credentials: true,
-    };
-    koa.use(cors(koaOptions));
+    koa.use(cors({ credentials: true }));
 
     this.registerRoutes(koa);
 
@@ -68,6 +69,7 @@ export class RootServersInbound {
     this.koaServer.close();
   }
 
+  // web inbound logic
 
   private registerRoutes(app: KoaWebsocket.App): void {
     //new room
@@ -113,26 +115,31 @@ export class RootServersInbound {
   }
 
   private handleNewRoom(ctx: Koa.Context): void {
-    const { id } = this.server.newRoom();
-    log.debug(`new room allocated: ${id}`);
-    ctx.status = 200;
-    ctx.body = {
-      'code': 'success',
-      'id': id
-    };
+    try {
+      const { id } = this.server.newRoom();
+      log.debug(`new room allocated: ${id}`);
+      ctx.status = 200;
+      ctx.body = {
+        'id': id
+      };
+    } catch (e) {
+      ctx.throw(e);
+    }
   }
 
   private handleNewPlayerConnection(ctx: Koa.Context, id: string): void {
     try {
       const name = ctx.query.name;
 
-      log.debug(`new player connection for room:[${id}] name:[${name}]`);
-      ctx.websocket.on('close',(code, reason)=>{
-        log.debug(`player connection for room:[${id}] name:[${name}] closed: ${code}:${reason}`)
-      });
-      ctx.websocket.on('error',(error)=>{
-        log.debug(`player connection for room:[${id}] name:[${name}] errored: ${error}`)
-      });
+      if(log.isDebugEnabled()) {
+        log.debug(`new player connection for room:[${id}] name:[${name}]`);
+        ctx.websocket.on('close',(code, reason)=>{
+          log.debug(`player connection for room:[${id}] name:[${name}] closed: ${code}:${reason}`)
+        });
+        ctx.websocket.on('error',(error)=>{
+          log.debug(`player connection for room:[${id}] name:[${name}] errored: ${error}`)
+        });
+      }
 
       if(!(typeof name === 'string')) {
         ctx.websocket.close(4000, 'error.name_not_provided');
@@ -153,13 +160,15 @@ export class RootServersInbound {
 
   private newObserverConnection(ctx: Koa.Context, id: string): void {
     try {
-      log.debug(`new observer connection for room:[${id}]`);
-      ctx.websocket.on('close',(code, reason)=>{
-        log.debug(`observer connection for room:[${id}] name:[${ctx.query.name}] closed: ${code}:${reason}`)
-      });
-      ctx.websocket.on('error',(error)=>{
-        log.debug(`observer connection for room:[${id}] name:[${ctx.query.name}] errored: ${error}`)
-      });
+      if(log.isDebugEnabled()) {
+        log.debug(`new observer connection for room:[${id}]`);
+        ctx.websocket.on('close',(code, reason)=>{
+          log.debug(`observer connection for room:[${id}] name:[${ctx.query.name}] closed: ${code}:${reason}`)
+        });
+        ctx.websocket.on('error',(error)=>{
+          log.debug(`observer connection for room:[${id}] name:[${ctx.query.name}] errored: ${error}`)
+        });
+      }
 
       const room = this.server.getRoom(id);
       if (room === null) {

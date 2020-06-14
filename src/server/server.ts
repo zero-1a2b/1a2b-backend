@@ -16,6 +16,9 @@ function closeOnErrorDefined(action: string, conn: ws): (e?: Error) => void {
   };
 }
 
+/**
+ * represents the 'root' server, in charge of all the event and connection issues
+ */
 export class RootServer {
 
   get room(): RoomServer { return this._room; }
@@ -46,13 +49,8 @@ export class RootServer {
 
   close(): void {
     this._room.close();
-    this.onClose();
   }
 
-  /**
-   * this function is a hack:
-   *  close -> ask RoomServer to close -> close this shell
-   */
   private onClose(): void {
     console.log('closing connections');
     this.playerConnections.forEach(v => v.close(1007, 'status.room_closing'));
@@ -97,8 +95,7 @@ export class RootServer {
         conn.send(JSON.stringify({ 'code': 'error', 'message': err.message }));
       }
     });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    conn.addEventListener('close', (_event) => {
+    conn.addEventListener('close', () => {
       this.playerConnections.delete(conn);
       const left: PlayerDisconnectRequest = {
         type: RoomRequestType.DISCONNECT,
@@ -106,8 +103,7 @@ export class RootServer {
       };
       this._room.handleRequest(left, INTERNAL_SENDER);
     });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    conn.addEventListener('error', (_event) => {
+    conn.addEventListener('error', () => {
       this.playerConnections.delete(conn);
       const left: PlayerDisconnectRequest = {
         type: RoomRequestType.DISCONNECT,
@@ -121,12 +117,10 @@ export class RootServer {
   }
 
   private acceptObserverConnection(conn: ws): void {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    conn.addEventListener('close', (_event) => {
+    conn.addEventListener('close', () => {
       this.observerConnections.delete(conn);
     });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    conn.addEventListener('error', (_event) => {
+    conn.addEventListener('error', () => {
       this.observerConnections.delete(conn);
     });
     log.debug(`room:[${this._room.room.id}] replaying ${this.history.length} events to observer`);

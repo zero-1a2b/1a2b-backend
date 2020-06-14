@@ -1,6 +1,6 @@
 export enum SenderType {
   PLAYER,
-  SYSTEM,
+  ADMIN,
   INTERNAL
 }
 

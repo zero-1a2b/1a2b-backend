@@ -20,6 +20,9 @@ export interface RootServersConfig {
 }
 
 
+/**
+ * the cluster of all rooms, in charge of management & closing on not used
+ */
 export class RootServers {
 
   public static readonly DEFAULT_CONFIG: RootServersConfig = {
@@ -116,9 +119,12 @@ export class RootServers {
     this.rooms.forEach((v, k) => {
       log.debug(`room: ${k}: ${now.diff(v.lastActive)}`);
       const haveNobody = v.room.room.room.playerIDs.length === 0;
-      const isEmptyInactive = now.diff(v.lastActive)>=this.config.gc.maxEmptyRoomIdleMillis;
-      const isMaxInactive = now.diff(v.lastActive)>=this.config.gc.maxIdleMillis;
-      if ((haveNobody && isEmptyInactive)||((!haveNobody)&& isMaxInactive)) {
+      const reachedMaxEmptyIdle = now.diff(v.lastActive)>=this.config.gc.maxEmptyRoomIdleMillis;
+      const reachedMaxIdle = now.diff(v.lastActive)>=this.config.gc.maxIdleMillis;
+      if (
+        (haveNobody && reachedMaxEmptyIdle)
+        ||((!haveNobody)&& reachedMaxIdle)
+      ) {
         toGC.push(k);
       }
     });
