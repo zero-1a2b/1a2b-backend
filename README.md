@@ -3,7 +3,7 @@
 [![APLv2][license-badge]][LICENSE]
 [![Maintainability][codeclimate-badge]][codeclimate]
 [![Build Status - Travis][travis-badge]][travis-ci]
-[![Coverage][codecov]][codecov-badge]
+[![codecov](https://codecov.io/gh/zero-1a2b/1a2b-backend/branch/master/graph/badge.svg)](https://codecov.io/gh/zero-1a2b/1a2b-backend)
 
 # 1A2B Backend
 
@@ -56,6 +56,3 @@ This project is based on node-typescript-boilerplate, check it out!
 
 [codeclimate-badge]: https://api.codeclimate.com/v1/badges/bc39035b28382658967f/maintainability
 [codeclimate]: https://codeclimate.com/github/zero-1a2b/1a2b-backend/maintainability
-
-[codecov-badge]: https://codecov.io/gh/zero-1a2b/1a2b-backend/branch/master/graph/badge.svg
-[codecov]: https://codecov.io/gh/zero-1a2b/1a2b-backend
