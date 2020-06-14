@@ -33,6 +33,9 @@ export enum RoomState {
 }
 
 
+/**
+ * representing a room for gaming
+ */
 export class Room {
 
   static readonly DEFAULT_ROOM_CONFIG: RoomConfig = {
@@ -146,7 +149,7 @@ export class Room {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private handleGameFinishedEvent(_e: GameFinishedEvent): Room {
     const newReady = new Map<string, boolean>();
-    this.playerReady.forEach((value, key) => newReady[key]=value);
+    this.playerReady.forEach((_value, key) => newReady[key]=false);
     return new Room(
       this.id,
       RoomState.IDLE,

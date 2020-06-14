@@ -2,16 +2,22 @@ import { ChatLine, Room, RoomConfig } from './logic/room';
 import { GameServerRequest } from '../game/server.request';
 import { ClientGame } from '../game/logic/client-game';
 
+// base interface //
 
 export enum RoomRequestType {
   CHANGE_SETTINGS = "setting",
+
   CONNECT = "connect",
   DISCONNECT = "disconnect",
+
   READY = "ready",
   UNREADY = "unready",
+
   START = "start",
   GAME = "game",
+
   CHAT = "chat",
+
   GET_STATE = "get_state",
   GET_GAME_STATE = "get_game_state"
 }
@@ -22,6 +28,12 @@ export interface RoomServerRequest {
 
 }
 
+
+/**
+ * represents a request to change settings
+ * TODO: enforce room owner privilege to do this
+ * @note: security: anyone can do this
+ */
 export interface ChangeSettingsRequest extends RoomServerRequest {
 
   type: RoomRequestType.CHANGE_SETTINGS;
@@ -30,6 +42,10 @@ export interface ChangeSettingsRequest extends RoomServerRequest {
 
 }
 
+/**
+ * represents a player have joined the room (new connection)
+ * @note: security: system(INTERNAL_SENDER) only
+ */
 export interface PlayerConnectRequest extends RoomServerRequest {
 
   type: RoomRequestType.CONNECT;
@@ -38,6 +54,10 @@ export interface PlayerConnectRequest extends RoomServerRequest {
 
 }
 
+/**
+ * represents a player have left the room (lost connection)
+ * @note: security: system(INTERNAL_SENDER) only
+ */
 export interface PlayerDisconnectRequest extends RoomServerRequest {
 
   type: RoomRequestType.DISCONNECT;
@@ -46,6 +66,10 @@ export interface PlayerDisconnectRequest extends RoomServerRequest {
 
 }
 
+/**
+ * represents a player is ready
+ * @note: security: the player field must match the sender's
+ */
 export interface PlayerReadyRequest extends RoomServerRequest {
 
   type: RoomRequestType.READY;
@@ -54,6 +78,10 @@ export interface PlayerReadyRequest extends RoomServerRequest {
 
 }
 
+/**
+ * represents a player is unready
+ * @note: security: the player field must match the sender's
+ */
 export interface PlayerUnreadyRequest extends RoomServerRequest {
 
   type: RoomRequestType.UNREADY;
@@ -62,12 +90,20 @@ export interface PlayerUnreadyRequest extends RoomServerRequest {
 
 }
 
+/**
+ * represents request to start a game
+ * @note: security: any player
+ */
 export interface GameStartRequest extends RoomServerRequest {
 
   type: RoomRequestType.START;
 
 }
 
+/**
+ * delegate to the request of the underlying game
+ * @note: security: any player
+ */
 export interface GameRequest extends RoomServerRequest {
 
   type: RoomRequestType.GAME;
@@ -76,6 +112,10 @@ export interface GameRequest extends RoomServerRequest {
 
 }
 
+/**
+ * the chat request
+ * @note: security: sender's name must match the msg.name's value, or INTERNAL_SENDER
+ */
 export interface ChatRequest extends RoomServerRequest {
 
   type: RoomRequestType.CHAT;
@@ -84,6 +124,9 @@ export interface ChatRequest extends RoomServerRequest {
 
 }
 
+/**
+ * HACK: dump the state tree of the server, forcing a state sync
+ */
 export interface GetStateRequest extends RoomServerRequest {
 
   type: RoomRequestType.GET_STATE;
@@ -98,6 +141,9 @@ export interface GetStateResponse {
 
 }
 
+/**
+ * HACK: dump the state tree of the room, forcing a state sync
+ */
 export interface GetGameStateRequest extends RoomServerRequest {
 
   type: RoomRequestType.GET_GAME_STATE;

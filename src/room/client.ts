@@ -4,6 +4,9 @@ import { GameClient } from '../game/client';
 import { NewClientGameEvent } from '../game/logic/game.event';
 
 
+/**
+ * the client version of the room。
+ */
 export class RoomClient {
 
   public get state(): RoomState { return this.room.state; }

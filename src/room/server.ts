@@ -9,7 +9,7 @@ import {
   PlayerJoinEvent,
   PlayerLeftEvent,
   PlayerReadyEvent,
-  PlayerUnreadyEvent,
+  PlayerUnreadyEvent, RoomClosedEvent,
   RoomEvent,
   RoomEventType,
 } from './logic/room.event';
@@ -39,6 +39,10 @@ import { GameState } from '../game/game-state';
 import { wrap } from '../util/util';
 
 
+/**
+ * the server version of the room.
+ * @note have lifecycle, must be cleaned up with close()
+ */
 export class RoomServer {
 
   static newRoom(id: string): RoomServer {
@@ -150,6 +154,7 @@ export class RoomServer {
         type: RoomEventType.GAME_EVENT,
         event: event
       });
+      //placed here for <all the game events> -> <GAME_FINISHED if finished>
       if(this._game.state === GameState.FINISHED) {
         this.sendEvent({
           type: RoomEventType.GAME_FINISHED,
@@ -263,11 +268,12 @@ export class RoomServer {
     //trivially success
     if(this.room.playerIDs.find(v=>v===req.player) === undefined) {
       return null;
+    } else {
+      return {
+        type: RoomEventType.PLAYER_LEFT,
+        player: req.player
+      };
     }
-    return {
-      type: RoomEventType.PLAYER_LEFT,
-      player: req.player
-    };
   }
 
   private handlePlayerReady(req: PlayerReadyRequest, sender: RequestSender): PlayerReadyEvent {
@@ -275,32 +281,33 @@ export class RoomServer {
 
     if(this.room.state !== RoomState.IDLE) {
       throw new Error("error.game_already_started");
-    } else {
-      if(this.room.playerIDs.findIndex(v=>v===req.player) === -1) {
-        throw new Error("error.player_not_exists");
-      }
-      return {
-        type: RoomEventType.PLAYER_READY,
-        player: req.player
-      };
     }
+    if(this.room.playerIDs.findIndex(v=>v===req.player) === -1) {
+      throw new Error("error.player_not_exists");
+    }
+
+    return {
+      type: RoomEventType.PLAYER_READY,
+      player: req.player
+    };
   }
 
   private handlePlayerUnready(req: PlayerUnreadyRequest, sender: RequestSender): PlayerUnreadyEvent {
     perm.assertTrue(sender.type === SenderType.PLAYER && req.player === sender.player);
 
-    if(this.room.state !== RoomState.IDLE) {
+    if (this.room.state !== RoomState.IDLE) {
       throw new Error("error.game_already_started");
-    } else {
-      if(this.room.playerIDs.findIndex(v=>v===req.player) === -1) {
-        throw new Error("error.player_not_exists");
-      }
-      return {
-        type: RoomEventType.PLAYER_UNREADY,
-        player: req.player
-      };
     }
+    if (this.room.playerIDs.findIndex(v => v === req.player) === -1) {
+      throw new Error("error.player_not_exists");
+    }
+
+    return {
+      type: RoomEventType.PLAYER_UNREADY,
+      player: req.player
+    };
   }
+
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private handleGameStart(_req: GameStartRequest, sender: RequestSender): GameStartedEvent {
@@ -324,25 +331,25 @@ export class RoomServer {
     };
   }
 
-  private handleGameRequest(req: GameRequest, sender: RequestSender): Array<NormalRoomEvent> {
+  private handleGameRequest(req: GameRequest, sender: RequestSender): RoomClosedEvent | null {
     if(this._game === null) {
       throw new Error("error.game_not_started");
+    }
+
+    this._game.handleRequest(req.request, sender);
+
+    if(this._game.game.winner !== undefined) {
+      return {
+        type: RoomEventType.ROOM_CLOSED
+      };
     } else {
-      this._game.handleRequest(req.request, sender);
-      if(this._game.game.winner !== undefined) {
-        return [
-          {
-            type: RoomEventType.ROOM_CLOSED
-          }
-        ];
-      } else {
-        return [];
-      }
+      return null;
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private handleGetState(_req: GetStateRequest, _sender: RequestSender): GetStateResponse {
+  private handleGetState(_req: GetStateRequest, sender: RequestSender): GetStateResponse {
+    assertTrue(sender!=undefined); //anyone can do this
+
     const ready = {};
     this.room.playerReady.forEach((value, key) => ready[key]=value);
     return {
@@ -358,8 +365,9 @@ export class RoomServer {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private handleGetGameState(_req: GetGameStateRequest, _sender: RequestSender): GetGameStateResponse {
+  private handleGetGameState(_req: GetGameStateRequest, sender: RequestSender): GetGameStateResponse {
+    assertTrue(sender!=undefined); //anyone can do this
+
     const ready = {};
     this.room.playerReady.forEach((value, key) => ready[key]=value);
     return {

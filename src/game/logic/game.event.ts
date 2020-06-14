@@ -22,7 +22,7 @@ export interface GameEvent {
 // new game events //
 
 /**
- * represents a new game, represents the start of the game stream
+ * represents a new game, is the start of the game stream
  */
 export type NewGameEvent = NewClientGameEvent | NewServerGameEvent;
 
